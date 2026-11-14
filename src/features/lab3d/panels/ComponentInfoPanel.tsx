@@ -5,6 +5,10 @@ import type { InverterModel, ModelPart } from '../../../types/domain'
 import { ComponentSymbol } from '../../../ui/symbols/Symbol'
 import { Tag } from '../../../ui/primitives'
 import { useLab } from '../store/labStore'
+import { Link } from 'react-router-dom'
+import { TEST_PROCEDURES } from '../../../content/components/testing'
+import { SpecTable } from '../../library/components/SpecTable'
+import { TestProcedureView } from '../../library/components/TestProcedureView'
 import { ComponentPreview } from './ComponentPreview'
 import { formatOhms, resistorBands } from '../logic/resistor'
 
@@ -48,6 +52,9 @@ export function ComponentInfoPanel({ model, part }: { model: InverterModel; part
         </div>
         <h3 className="mt-1.5 text-lg font-semibold leading-snug text-ink-100">{c.name}</h3>
         <p className="text-sm text-ink-400">{part.label}</p>
+        <Link to={`/components/${c.id}`} className="mt-1 inline-block text-xs text-signal-300 hover:text-ink-100">
+          Open full entry in the Component Library →
+        </Link>
       </header>
 
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -100,21 +107,8 @@ export function ComponentInfoPanel({ model, part }: { model: InverterModel; part
             <p className="text-sm text-ink-300">{c.operatingPrinciple}</p>
             <H>Common applications</H>
             <List items={c.applications} />
-            <H>Typical specifications (this model)</H>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-chassis-700">
-                {c.typicalSpecs.map((s) => (
-                  <tr key={s.name}>
-                    <th scope="row" className="py-1 pr-2 text-left font-normal text-ink-400">
-                      {s.name}
-                    </th>
-                    <td className="readout py-1 text-right whitespace-nowrap text-ink-100">
-                      {s.value} {s.unit}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <H>Specifications</H>
+            <SpecTable specs={c.typicalSpecs} compact />
             {level !== 'beginner' && level !== 'advanced' && (
               <details className="mt-3 text-sm text-ink-300">
                 <summary className="cursor-pointer text-ink-400">Plain-language summary and design note</summary>
@@ -160,12 +154,10 @@ export function ComponentInfoPanel({ model, part }: { model: InverterModel; part
           <>
             <H>Common failure symptoms</H>
             <List items={c.failureSymptoms} />
-            <H>Testing methodology</H>
-            <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm text-ink-300">
-              {c.testingMethod.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ol>
+            <H>Testing procedure</H>
+            {(TEST_PROCEDURES[c.id] ?? []).map((t) => (
+              <TestProcedureView key={t.id} procedure={t} compact />
+            ))}
             <H>Replacement considerations</H>
             <List items={c.replacementNotes} />
           </>

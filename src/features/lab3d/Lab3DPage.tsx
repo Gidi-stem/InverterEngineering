@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useShallow } from 'zustand/react/shallow'
-import { INVERTER_MODELS } from '../../content/models'
-import { snapshot, useProgress } from '../../store/progressStore'
+import { Link, useSearchParams } from 'react-router-dom'
+import { INVERTER_MODELS, MODEL_BY_ID } from '../../content/models'
+import { useProgress } from '../../store/progressStore'
 import type { LearnerLevel } from '../../types/progress'
 import { SafetyNotice } from '../../ui/primitives'
-import { newlySatisfiedLessons } from './logic/lessons'
 import { hasWebGL } from './logic/webgl'
 import { ComponentInfoPanel } from './panels/ComponentInfoPanel'
 import { IdentifyPanel } from './panels/IdentifyPanel'
@@ -29,17 +27,6 @@ const LEVELS: { id: LearnerLevel; label: string }[] = [
   { id: 'advanced', label: 'Advanced' },
 ]
 
-/** Keeps lesson completion in step with studied components and finished activities. */
-function useLessonSync() {
-  const p = useProgress(useShallow((s) => snapshot(s)))
-  const completeLesson = useProgress((s) => s.completeLesson)
-  const hydrated = useProgress((s) => s.hydrated)
-  useEffect(() => {
-    if (!hydrated) return
-    for (const id of newlySatisfiedLessons(p)) completeLesson(id)
-  }, [p, hydrated, completeLesson])
-}
-
 export default function Lab3DPage() {
   const [webgl] = useState(hasWebGL)
   const modelId = useLab((s) => s.modelId)
@@ -57,7 +44,20 @@ export default function Lab3DPage() {
   useEffect(() => {
     visit('lab3d')
   }, [visit])
-  useLessonSync()
+
+  // Deep link from the Component Library: /lab-3d?model=lf3k&part=q1 selects and frames that part.
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    const part = params.get('part')
+    if (!part) return
+    const m = MODEL_BY_ID[params.get('model') ?? ''] ?? getModel(useLab.getState().modelId)
+    if (!m.parts.some((p) => p.id === part)) return
+    const lab = useLab.getState()
+    if (lab.modelId !== m.id) lab.setModel(m.id)
+    if (useLab.getState().mode !== 'explore') useLab.getState().setMode('explore')
+    useLab.getState().select(part, true)
+    setParams(new URLSearchParams(), { replace: true })
+  }, [params, setParams])
   useEffect(() => {
     if (mode === 'explore' && selected) inspect(selected.componentId)
   }, [mode, selected, inspect])

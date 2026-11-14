@@ -3,7 +3,9 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { MODULES } from '../../content/modules'
 import { ErrorBoundary } from '../../ui/ErrorBoundary'
 import { Icon } from '../../ui/Icon'
-import { useProgress } from '../../store/progressStore'
+import { useShallow } from 'zustand/react/shallow'
+import { newlySatisfiedLessons } from '../../content/lessonCriteria'
+import { snapshot, useProgress } from '../../store/progressStore'
 import { summarise } from '../../store/selectors'
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
@@ -47,7 +49,19 @@ function Brand() {
   )
 }
 
+/** Marks lessons complete as soon as their criteria are met, wherever the learner earned them. */
+function useLessonSync() {
+  const p = useProgress(useShallow((s) => snapshot(s)))
+  const completeLesson = useProgress((s) => s.completeLesson)
+  const hydrated = useProgress((s) => s.hydrated)
+  useEffect(() => {
+    if (!hydrated) return
+    for (const id of newlySatisfiedLessons(p)) completeLesson(id)
+  }, [p, hydrated, completeLesson])
+}
+
 export function AppShell() {
+  useLessonSync()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const overall = useProgress((s) => summarise(s).overallPct)

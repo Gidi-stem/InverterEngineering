@@ -35,6 +35,12 @@ export const BADGES: Badge[] = [
     earned: (p) => ['lab3d:discharge', 'lab3d:disassembly'].every((id) => p.activities.some((a) => a.activityId === id)),
   },
   {
+    id: 'reference-reader',
+    title: 'Reference Reader',
+    description: 'Study all 24 component entries in the library or the 3D lab.',
+    earned: (p) => p.inspectedComponents.filter((id) => id !== 'enclosure').length >= 24,
+  },
+  {
     id: 'bench-hand',
     availableFromPhase: 4,
     title: 'Bench Hand',
@@ -57,7 +63,6 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'certified-practical',
-    availableFromPhase: 10,
     title: 'Practical Distinction',
     description: 'Score 80% or more on any practical assessment.',
     earned: (p) => p.assessments.some((a) => a.maxScore > 0 && a.score / a.maxScore >= 0.8),

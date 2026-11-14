@@ -6,8 +6,12 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ModulePage } from './features/modules/ModulePage'
 import { ProgressPage } from './features/progress/ProgressPage'
 
-/** The 3D lab (Three.js, R3F, drei) is code-split so the dashboard stays light. */
+/** The 3D lab (Three.js, R3F, drei) and the component library (full component database) are code-split so the dashboard stays light. */
 const Lab3DPage = lazy(() => import('./features/lab3d/Lab3DPage'))
+const LibraryPage = lazy(() => import('./features/library/LibraryPage'))
+const ComponentDetailPage = lazy(() => import('./features/library/ComponentDetailPage'))
+const ComparePage = lazy(() => import('./features/library/ComparePage'))
+const libLoading = <div className="grid h-64 place-items-center text-sm text-ink-400">Loading the component library…</div>
 const loading = <div className="grid h-64 place-items-center text-sm text-ink-400">Loading the 3D laboratory…</div>
 
 /** Hash routing keeps deep links working on any static host without server rewrites. */
@@ -26,7 +30,10 @@ export default function App() {
               </Suspense>
             }
           />
-          {MODULES.filter((m) => !['dashboard', 'progress', 'lab3d'].includes(m.id)).map((m) => (
+          <Route path="/components" element={<Suspense fallback={libLoading}><LibraryPage /></Suspense>} />
+          <Route path="/components/compare" element={<Suspense fallback={libLoading}><ComparePage /></Suspense>} />
+          <Route path="/components/:id" element={<Suspense fallback={libLoading}><ComponentDetailPage /></Suspense>} />
+          {MODULES.filter((m) => !['dashboard', 'progress', 'lab3d', 'components'].includes(m.id)).map((m) => (
             <Route key={m.id} path={m.path} element={<ModulePage moduleId={m.id} />} />
           ))}
           <Route path="*" element={<Navigate to="/" replace />} />

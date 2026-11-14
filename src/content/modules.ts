@@ -85,7 +85,7 @@ export const MODULES: LearningModule[] = [
     icon: 'chip',
     level: 'foundation',
     phase: 3,
-    status: 'planned',
+    status: 'live',
     summary:
       'A searchable engineering database of every inverter component: symbol, pinout, operating principle, failure modes and test method.',
     objectives: [

@@ -14,7 +14,7 @@ npm run build      # production build in dist/ (relative paths, so it runs from 
 npm run preview    # serve the production build
 ```
 
-## Status: Phase 2 complete
+## Status: Phase 3 complete
 
 - **Phase 1:** application shell with 12 sections, engineering dashboard with a live H-bridge waveform bench, learning pathway, badges, progress persistence with backup/restore.
 - **Phase 2:** 3D Inverter Laboratory with two inverter models (LF-3K 3 kW hybrid, SQ-1K 1 kW square-wave):
@@ -26,6 +26,15 @@ npm run preview    # serve the production build
   - identification challenge (advanced level = assessment asm-01)
   - beginner / intermediate / advanced levels; progress, lessons and an activity log update from real activities
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture, data models, simulation strategy and roadmap, and [docs/PHASE-2-REPORT.md](docs/PHASE-2-REPORT.md) for the Phase 2 completion report.
+- **Phase 3:** searchable Component Library with a single-source database shared with the 3D lab:
+  - ranked search and category / 3D-model filters
+  - technical pages with three explanation levels
+  - symbols and pinout diagrams, and provenance-labelled specifications (no invented manufacturer ratings)
+  - virtual-instrument test procedures with safety preconditions
+  - faults, replacement guidance and related components
+  - eight comparison guides with checks, and a side-by-side tool
+  - deep links to each part's location in the 3D inverter
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture, data models, simulation strategy and roadmap, [docs/PHASE-2-REPORT.md](docs/PHASE-2-REPORT.md) and [docs/PHASE-3-REPORT.md](docs/PHASE-3-REPORT.md) for the completion reports.
 
 > Educational simulation only. It does not qualify anyone to work on live electrical equipment.

@@ -1,0 +1,210 @@
+import type { CheckpointQuestion } from '../../types/domain'
+
+/**
+ * Curated comparison guides. Each side links to a component entry (the single source of
+ * component information); rows hold only the comparison itself. Values are qualitative or
+ * typical ranges, never manufacturer ratings.
+ */
+export interface ComparisonGuide {
+  id: string
+  title: string
+  summary: string
+  sides: { label: string; componentId: string }[]
+  rows: { criterion: string; values: string[] }[]
+  /** One "choose this when…" line per side. */
+  chooseWhen: string[]
+  inverterExample: string
+  check: CheckpointQuestion[]
+}
+
+export const COMPARISONS: ComparisonGuide[] = [
+  {
+    id: 'mosfet-vs-igbt',
+    title: 'MOSFET vs IGBT',
+    summary: 'Both are voltage-controlled power switches. The choice depends on voltage, current and switching frequency.',
+    sides: [
+      { label: 'Power MOSFET', componentId: 'mosfet' },
+      { label: 'IGBT', componentId: 'igbt' },
+    ],
+    rows: [
+      { criterion: 'Control', values: ['Voltage on gate (V_GS ≈ 10–12 V on)', 'Voltage on gate (V_GE ≈ 15 V on)'] },
+      { criterion: 'On-state behaviour', values: ['Resistor: loss = I²·R_DS(on)', 'Near-constant drop: loss ≈ V_CE(sat)·I'] },
+      { criterion: 'Typical voltage classes', values: ['Tens of volts up to ≈ 600–900 V (silicon)', '600 V, 1200 V and above'] },
+      { criterion: 'Switching speed', values: ['Very fast; tens to hundreds of kHz', 'Slower turn-off (tail current); typically up to ≈ 20–40 kHz discrete'] },
+      { criterion: 'Reverse conduction', values: ['Intrinsic body diode', 'Needs a co-packaged diode'] },
+      { criterion: 'Paralleling', values: ['Easy: R_DS(on) rises with temperature, so current shares', 'Possible, needs care with matching and layout'] },
+      { criterion: 'In this lab', values: ['LF-3K battery H-bridge (48 V)', 'LF-3K PV charger (≤ 450 V)'] },
+    ],
+    chooseWhen: ['Low voltage, high current, high frequency (e.g. a 12/24/48 V battery bridge).', 'High voltage at moderate frequency, where V_CE(sat)·I is lower than I²·R_DS(on).'],
+    inverterExample: 'The LF-3K uses MOSFETs on the 48 V side, where R_DS(on) losses are tiny, and IGBTs on the 450 V PV side, where a high-voltage MOSFET would have a much higher R_DS(on).',
+    check: [
+      { prompt: 'Conduction loss of a MOSFET grows with…', options: ['current, linearly', 'current squared', 'switching frequency', 'gate voltage'], correct: 1, explanation: 'MOSFET conduction loss is I²·R_DS(on).' },
+      { prompt: 'Why are IGBTs usually switched more slowly than MOSFETs?', options: ['They need more gate voltage', 'Stored charge causes a turn-off tail current', 'They have no gate', 'They cannot block voltage'], correct: 1, explanation: 'Minority carriers must recombine at turn-off, producing a tail current and higher switching loss.' },
+    ],
+  },
+  {
+    id: 'capacitor-types',
+    title: 'Electrolytic vs film vs ceramic capacitors',
+    summary: 'All store charge (E = ½CV²) but their dielectrics give very different strengths.',
+    sides: [
+      { label: 'Aluminium electrolytic', componentId: 'capacitor' },
+      { label: 'Polypropylene film', componentId: 'capacitor' },
+      { label: 'Multilayer ceramic (MLCC)', componentId: 'capacitor' },
+    ],
+    rows: [
+      { criterion: 'Polarity', values: ['Polarised (reverse voltage destroys it)', 'Non-polarised', 'Non-polarised'] },
+      { criterion: 'Capacitance per volume', values: ['Very high', 'Low', 'High at low voltage; small values at high voltage'] },
+      { criterion: 'ESR and losses', values: ['Higher; heats with ripple current', 'Very low', 'Very low'] },
+      { criterion: 'AC use', values: ['No (DC only)', 'Yes, with AC-rated (X2/“~”) types', 'Limited at mains voltage'] },
+      { criterion: 'Lifetime', values: ['Wear-out item; life halves per ≈ 10 °C rise', 'Long; self-healing', 'Long; can crack mechanically'] },
+      { criterion: 'Main job in an inverter', values: ['Bulk DC-bus reservoir', 'AC output filter, snubbers', 'Decoupling next to ICs and switches'] },
+    ],
+    chooseWhen: ['You need large capacitance on a DC bus at low cost.', 'AC filtering or pulse duty where low loss and long life matter.', 'High-frequency decoupling in a small space, right at the pins.'],
+    inverterExample: 'LF-3K: C1–C6 are electrolytic bus reservoirs; C7 is an AC-rated film capacitor in the output LC filter. Ceramics decouple the control ICs (not modelled in 3D).',
+    check: [
+      { prompt: 'Which capacitor type must never see reverse voltage?', options: ['Film', 'Ceramic', 'Aluminium electrolytic', 'All of them equally'], correct: 2, explanation: 'Aluminium electrolytics are polarised; reverse voltage breaks down the oxide and can make them vent.' },
+      { prompt: 'Why is a film capacitor used in the AC output filter?', options: ['It is polarised', 'It is non-polarised, low-loss and AC-rated', 'It has the most capacitance', 'It is the cheapest per µF'], correct: 1, explanation: 'The output is AC, so the capacitor must be non-polarised and rated for continuous AC with low loss.' },
+    ],
+  },
+  {
+    id: 'transformer-vs-inductor',
+    title: 'Transformer vs inductor',
+    summary: 'Both are copper windings on a magnetic core, but they do opposite jobs: one transfers energy, the other stores it.',
+    sides: [
+      { label: 'Transformer', componentId: 'transformer' },
+      { label: 'Inductor (choke)', componentId: 'inductor' },
+    ],
+    rows: [
+      { criterion: 'Windings', values: ['Two or more, magnetically coupled', 'One (for a simple choke)'] },
+      { criterion: 'Purpose', values: ['Transfers energy, changes voltage by the turns ratio, isolates', 'Stores energy (½LI²), opposes changes in current'] },
+      { criterion: 'Core design', values: ['Minimise stored energy: no gap, high permeability', 'Store energy: gapped ferrite or distributed-gap powder core'] },
+      { criterion: 'Key equation', values: ['V_s/V_p = N_s/N_p', 'V = L·di/dt'] },
+      { criterion: 'Isolation', values: ['Yes, galvanic isolation between windings', 'No'] },
+      { criterion: 'In this lab', values: ['LF-3K T1: 30 V → 230 V step-up', 'LF-3K L1: output LC filter'] },
+    ],
+    chooseWhen: ['You need a different voltage level or galvanic isolation.', 'You need to smooth current, filter ripple, or store energy in a converter.'],
+    inverterExample: 'In the LF-3K, T1 lifts the bridge voltage to 230 V and isolates the battery side; L1 and C7 then filter the switching ripple so the output is a clean sine wave.',
+    check: [
+      { prompt: 'A transformer has 30 primary turns and 230 secondary turns. With 30 V on the primary, the secondary is about…', options: ['30 V', '115 V', '230 V', '690 V'], correct: 2, explanation: 'V_s = V_p × N_s/N_p = 30 × 230/30 = 230 V.' },
+      { prompt: 'Why do power inductors often have an air gap in the core?', options: ['To look different', 'To store energy without saturating', 'To provide isolation', 'To reduce copper weight'], correct: 1, explanation: 'Most of the energy in a gapped core is stored in the gap, which raises the current at which the core saturates.' },
+    ],
+  },
+  {
+    id: 'relay-vs-semiconductor',
+    title: 'Relay vs semiconductor switch',
+    summary: 'A relay moves metal contacts; a MOSFET or IGBT switches electronically. Inverters use both, for different jobs.',
+    sides: [
+      { label: 'Electromechanical relay', componentId: 'relay' },
+      { label: 'Semiconductor switch (MOSFET)', componentId: 'mosfet' },
+    ],
+    rows: [
+      { criterion: 'Switching speed', values: ['Milliseconds (≈ 5–15 ms typical)', 'Nanoseconds to microseconds'] },
+      { criterion: 'Switching frequency', values: ['Occasional (transfer, connect/disconnect)', 'Continuous PWM at kHz'] },
+      { criterion: 'Off state', values: ['Physical air gap: true isolation', 'Blocks voltage, but small leakage current'] },
+      { criterion: 'On-state loss', values: ['Very low contact resistance', 'I²·R_DS(on)'] },
+      { criterion: 'Wear', values: ['Mechanical wear and contact erosion from arcing', 'No moving parts; fails from overstress'] },
+      { criterion: 'Control power', values: ['Coil current while on (≈ 1 W)', 'Gate charge only during switching'] },
+      { criterion: 'In this lab', values: ['LF-3K K1: output / grid transfer', 'LF-3K Q1–Q4: SPWM bridge'] },
+    ],
+    chooseWhen: ['You need visible isolation or infrequent switching of AC, e.g. grid transfer.', 'You need fast, repeated switching, e.g. PWM.'],
+    inverterExample: 'The LF-3K builds its waveform with MOSFETs switching thousands of times a second, but uses relay K1 to connect or transfer the output because a relay gives a true open circuit.',
+    check: [
+      { prompt: 'Why is a relay unsuitable for generating an SPWM waveform?', options: ['It cannot carry current', 'It switches far too slowly and would wear out', 'It needs a gate driver', 'It only works on DC'], correct: 1, explanation: 'SPWM needs kHz switching; relays take milliseconds and wear with every operation.' },
+      { prompt: 'What does a relay offer that a MOSFET does not?', options: ['Faster switching', 'A physical air gap when open', 'Lower control power while on', 'No wear'], correct: 1, explanation: 'Open relay contacts are physically separated, which gives real isolation.' },
+    ],
+  },
+  {
+    id: 'fuse-vs-breaker',
+    title: 'Fuse vs circuit breaker',
+    summary: 'Both interrupt overcurrent. A fuse is a one-shot weak link; a breaker is a resettable switch.',
+    sides: [
+      { label: 'Fuse', componentId: 'fuse' },
+      { label: 'Circuit breaker', componentId: 'circuit-breaker' },
+    ],
+    rows: [
+      { criterion: 'Operation', values: ['Element melts', 'Thermal and magnetic trip opens contacts'] },
+      { criterion: 'After a fault', values: ['Replace', 'Reset (after finding the cause)'] },
+      { criterion: 'Speed on a short circuit', values: ['Very fast, current-limiting types available', 'Fast (magnetic trip), slower on overload'] },
+      { criterion: 'Use as an isolator', values: ['Not a switch (unless in a switch-fuse)', 'Yes: lockable disconnection point'] },
+      { criterion: 'DC considerations', values: ['Needs a DC voltage rating and adequate breaking capacity', 'Needs a DC rating; polarised types must be wired as marked'] },
+      { criterion: 'In this lab', values: ['LF-3K 150 A battery fuse', 'LF-3K PV DC breaker'] },
+    ],
+    chooseWhen: ['You need very high breaking capacity close to a battery, at low cost.', 'You need a resettable, lockable isolation point (e.g. PV input).'],
+    inverterExample: 'The battery can deliver an enormous fault current, so the LF-3K protects it with a fuse; the PV input uses a breaker because it doubles as the isolation switch for maintenance.',
+    check: [
+      { prompt: 'Which device can also serve as a lockable isolation switch?', options: ['Fuse', 'Circuit breaker', 'Both equally', 'Neither'], correct: 1, explanation: 'A breaker is a switch with protection built in, so it can be switched off and locked.' },
+      { prompt: 'Before replacing a blown fuse you should…', options: ['Fit a larger fuse', 'Find and fix the cause of the fault', 'Bridge it temporarily', 'Nothing'], correct: 1, explanation: 'A blown fuse indicates a fault; replacing it without finding the cause usually blows the new fuse or causes damage.' },
+    ],
+  },
+  {
+    id: 'pwm-vs-mcu',
+    title: 'Dedicated PWM controller vs microcontroller',
+    summary: 'Both decide when switches turn on and off: one in fixed analogue hardware, the other in firmware.',
+    sides: [
+      { label: 'PWM controller IC', componentId: 'pwm-controller' },
+      { label: 'Microcontroller', componentId: 'microcontroller' },
+    ],
+    rows: [
+      { criterion: 'How it works', values: ['Analogue oscillator, comparator and error amplifier', 'Digital timers and control algorithms in firmware'] },
+      { criterion: 'Flexibility', values: ['Fixed function, set by resistors and capacitors', 'Fully programmable: SPWM, MPPT, protection, communications'] },
+      { criterion: 'Complexity to use', values: ['Simple, robust', 'Needs firmware, programming and testing'] },
+      { criterion: 'Typical inverter use', values: ['Square-wave or simple converter stages', 'Pure-sine inverters, hybrid systems'] },
+      { criterion: 'In this lab', values: ['SQ-1K oscillator; LF-3K charger stage (U1)', 'LF-3K main controller (U6)'] },
+    ],
+    chooseWhen: ['A simple, fixed-frequency stage where robustness and low cost matter.', 'Sine-wave synthesis, closed-loop control, MPPT and user interfaces.'],
+    inverterExample: 'The SQ-1K needs only a fixed square wave, so an SG3525-type controller is enough. The LF-3K generates SPWM, tracks the solar maximum power point and talks to the display, which needs a microcontroller.',
+    check: [
+      { prompt: 'Which controller is needed to synthesise a pure sine wave by SPWM with closed-loop regulation?', options: ['A fixed PWM controller alone', 'A microcontroller (or DSP)', 'A relay', 'A diode'], correct: 1, explanation: 'SPWM with feedback needs programmable timing and calculation.' },
+      { prompt: 'An advantage of a dedicated PWM controller is…', options: ['It runs MPPT algorithms', 'It is simple and needs no firmware', 'It drives the display', 'It stores data'], correct: 1, explanation: 'Its behaviour is set by a few external components; there is no code to write or corrupt.' },
+    ],
+  },
+  {
+    id: 'voltage-vs-current-sensing',
+    title: 'Voltage sensing vs current sensing',
+    summary: 'The controller needs both measurements; each uses a different principle and protects against different faults.',
+    sides: [
+      { label: 'Isolated voltage sensor', componentId: 'voltage-sensor' },
+      { label: 'Hall-effect current sensor', componentId: 'current-sensor' },
+    ],
+    rows: [
+      { criterion: 'Principle', values: ['Resistor divider and isolation amplifier', 'Magnetic field of the conductor measured by a Hall element'] },
+      { criterion: 'Connection', values: ['Connected across the voltage (through high resistance)', 'Conductor passes through the aperture; no electrical contact'] },
+      { criterion: 'Protects against', values: ['Over/under-voltage on output, battery or PV', 'Overload and short circuit'] },
+      { criterion: 'Typical failure effect', values: ['Drift makes the inverter regulate to the wrong voltage', 'Offset causes false trips; failure removes overcurrent protection'] },
+    ],
+    chooseWhen: ['To regulate and protect voltage levels.', 'To limit current, protect switches and calculate power.'],
+    inverterExample: 'LF-3K U7 measures the output and bus voltages; CT1 measures the bridge current so the controller can shut down within microseconds of a short circuit.',
+    check: [
+      { prompt: 'A drifting voltage-sense divider reads 5 % low. The inverter output will be…', options: ['5 % low', 'About 5 % high', 'Unchanged', 'Zero'], correct: 1, explanation: 'The controller raises the output until the low reading looks correct, so the real output ends up too high.' },
+      { prompt: 'Why is a Hall sensor convenient for measuring battery current?', options: ['It needs no power', 'It is isolated and does not break the busbar', 'It measures voltage too', 'It is a fuse'], correct: 1, explanation: 'It senses the magnetic field, so the busbar passes through without any electrical connection.' },
+    ],
+  },
+  {
+    id: 'heatsink-vs-fan',
+    title: 'Heat sink vs cooling fan',
+    summary: 'The heat sink spreads heat into a large surface; the fan moves air across that surface. Together they set the thermal resistance.',
+    sides: [
+      { label: 'Heat sink (passive)', componentId: 'heat-sink' },
+      { label: 'Cooling fan (active)', componentId: 'cooling-fan' },
+    ],
+    rows: [
+      { criterion: 'Moving parts', values: ['None', 'Motor and bearings (wear item)'] },
+      { criterion: 'Effect on R_θsa (LF-3K model)', values: ['≈ 1.2 °C/W with natural convection', 'Drops it to ≈ 0.3 °C/W with forced air'] },
+      { criterion: 'Failure mode', values: ['Rare: dust blocking, pad failures', 'Bearing wear, stall: leads to over-temperature'] },
+      { criterion: 'Monitoring', values: ['Temperature sensor on the heat sink', 'Tachometer signal'] },
+    ],
+    chooseWhen: ['Always needed to take heat from the switches.', 'When natural convection cannot keep junction temperatures within limits at full load.'],
+    inverterExample: 'At 60 W loss and 40 °C ambient, the LF-3K heat sink runs at about 58 °C with the fan and over 110 °C without it, which is why a fan failure causes thermal shutdown.',
+    check: [
+      { prompt: 'With 60 W loss, 40 °C ambient and R_θsa = 0.3 °C/W, the heat-sink temperature is…', options: ['18 °C', '58 °C', '100 °C', '112 °C'], correct: 1, explanation: 'T = 40 + 60 × 0.3 = 58 °C.' },
+      { prompt: 'Which part is the wear item?', options: ['Heat sink', 'Fan', 'Both equally', 'Neither'], correct: 1, explanation: 'The fan has bearings and a motor that wear out; the extrusion has no moving parts.' },
+    ],
+  },
+]
+
+export const COMPARISON_BY_ID: Record<string, ComparisonGuide> = Object.fromEntries(COMPARISONS.map((c) => [c.id, c]))
+
+/** Curated guides that involve a component (for "compare with" links on its entry). */
+export function guidesFor(componentId: string) {
+  return COMPARISONS.filter((g) => g.sides.some((s) => s.componentId === componentId))
+}

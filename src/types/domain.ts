@@ -25,10 +25,20 @@ export interface Terminal {
   description: string
 }
 
+/**
+ * Where a specification comes from. None of these is a manufacturer rating for a specific part:
+ *  typical   – a typical range for this class of component, for learning
+ *  model     – a design value chosen for the simulated inverter
+ *  part-type – a published characteristic of an industry-standard, multi-source part type
+ *              (e.g. SG3525, 1N5408); confirm on the actual manufacturer's datasheet
+ */
+export type SpecKind = 'typical' | 'model' | 'part-type'
+
 export interface ComponentSpec {
   name: string
-  value: number
+  value: string
   unit: string
+  kind: SpecKind
 }
 
 export interface ElectronicComponent {
@@ -43,7 +53,6 @@ export interface ElectronicComponent {
   terminals: Terminal[]
   ioBehaviour: string
   failureSymptoms: string[]
-  testingMethod: string[]
   replacementNotes: string[]
   safety: string[]
   related: string[]
@@ -52,6 +61,43 @@ export interface ElectronicComponent {
   plainSummary: string
   /** Design-level note for advanced learners (selection, derating, layout). */
   advancedNote: string
+}
+
+// ───────────── Test procedures (virtual instruments) ─────────────
+
+export type InstrumentId = 'dmm' | 'scope' | 'clamp' | 'lcr' | 'esr' | 'insulation' | 'earth-bond' | 'thermal' | 'psu'
+
+/** Reusable safety preconditions; each procedure lists the ones that apply. */
+export type SafetyKey = 'isolate' | 'discharge' | 'esd' | 'live-qualified' | 'pv-daylight' | 'battery-short' | 'hot' | 'heavy' | 'cat-rated' | 'current-limit'
+
+export interface InstrumentReading {
+  /** Component condition this reading corresponds to, e.g. "Good", "Shorted", "Open". */
+  condition: string
+  /** What the instrument displays (representative, not a datasheet value). */
+  display: string
+  meaning: string
+  good: boolean
+}
+
+export interface TestStep {
+  instruction: string
+  instrument: InstrumentId
+  /** Instrument mode/range, e.g. "Diode test", "Ω, 200 Ω range". */
+  setting: string
+  /** Where the probes or clamp go. */
+  connection: string
+  readings: InstrumentReading[]
+}
+
+export interface TestProcedure {
+  id: string
+  title: string
+  /** When to use this test. */
+  purpose: string
+  safety: SafetyKey[]
+  /** Component-specific precautions in addition to the shared ones. */
+  extraSafety?: string[]
+  steps: TestStep[]
 }
 
 // ───────────── 3D inverter models ─────────────

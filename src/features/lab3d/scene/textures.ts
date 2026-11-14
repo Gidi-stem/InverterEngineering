@@ -23,7 +23,7 @@ export function canvasTexture(key: string, w: number, h: number, draw: (ctx: Can
   return t
 }
 
-/** Device marking: centred lines of text on a coloured ground (e.g. "IRFP4468" on a TO-247 body). */
+/** Device marking: centred lines of text on a coloured ground (e.g. "N-MOS 100V" on a TO-247 body). */
 export function markingTexture(lines: string[], bg = '#1a1c21', fg = '#d8dde6', opts: { w?: number; h?: number; mono?: boolean; scale?: number } = {}) {
   const w = opts.w ?? 256
   const h = opts.h ?? 256

@@ -149,7 +149,7 @@ const SYMBOLS: Record<SymbolKey, ReactNode> = {
       <T x={80} y={85}>V = I·R</T>
     </g>
   ),
-  'gate-driver': icBlock('UCC27211', ['VDD', 'HB', 'HI', 'LI'], ['HO', 'HS', 'LO', 'VSS']),
+  'gate-driver': icBlock('HB DRIVER', ['VDD', 'HB', 'HI', 'LI'], ['HO', 'HS', 'LO', 'VSS']),
   'pwm-controller': icBlock('SG3525', ['VIN', 'INV', 'NI', 'SD'], ['OUT A', 'OUT B', 'VREF', 'GND']),
   microcontroller: icBlock('MCU', ['VDD', 'NRST', 'ADC', 'SWD'], ['PWM', 'I/O', 'UART', 'VSS']),
   'display-board': (

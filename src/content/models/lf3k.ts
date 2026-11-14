@@ -19,7 +19,7 @@ const mosfets: ModelPart[] = [-13.5, -11, -8.5, -6].map((x, i) => ({
   assembly: 'power-board',
   position: [x, PCB_TOP, -2.25],
   explodeOffset: [0, 6, 2.5],
-  geometry: { factory: 'to247', kind: 'mosfet', marking: 'IRFP4468' },
+  geometry: { factory: 'to247', kind: 'mosfet', marking: 'N-MOS 100V' },
   mountedOn: 'pcb-main',
   removalNote: 'Clamped through its tab to the heat sink (with an insulating pad) and soldered into the power board.',
 }))
@@ -32,7 +32,7 @@ const igbts: ModelPart[] = [-2.5, 0].map((x, i) => ({
   assembly: 'power-board',
   position: [x, PCB_TOP, -2.25],
   explodeOffset: [0, 6, 2.5],
-  geometry: { factory: 'to247', kind: 'igbt', marking: '40N65H5' },
+  geometry: { factory: 'to247', kind: 'igbt', marking: 'IGBT 650V' },
   mountedOn: 'pcb-main',
   removalNote: 'Clamped to the heat sink and soldered into the power board, like the MOSFETs.',
 }))
@@ -45,7 +45,7 @@ const drivers: ModelPart[] = [-12.2, -7.2, -1.2].map((x, i) => ({
   assembly: 'power-board',
   position: [x, PCB_TOP, -0.6],
   explodeOffset: [0, 3.5, 0.5],
-  geometry: { factory: 'ic', pkg: 'soic8', marking: 'UCC27211' },
+  geometry: { factory: 'ic', pkg: 'soic8', marking: 'HB DRIVER' },
   mountedOn: 'pcb-main',
   removalNote: 'Surface-mount IC soldered to the power board; removed with hot air in a real repair.',
 }))
@@ -171,8 +171,8 @@ export const LF3K: InverterModel = {
       geometry: { factory: 'pcb', size: [13, 5], color: 'blue', silk: [{ at: rel(-12.5, 10.0, CTRL), text: 'U6 MCU' }, { at: rel(-8.5, 10.0, CTRL), text: 'U1' }, { at: rel(-5, 9.6, CTRL), text: 'U7' }] },
       removalNote: 'Four standoffs and a ribbon cable to the power board.',
     },
-    { id: 'u6', componentId: 'microcontroller', label: 'Microcontroller U6', designator: 'U6', assembly: 'control-board', position: [-12.5, PCB_TOP, 11.5], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'lqfp64', marking: 'STM32F334' }, mountedOn: 'pcb-ctrl', removalNote: 'Fine-pitch IC soldered to the control board.' },
-    { id: 'u1', componentId: 'pwm-controller', label: 'PWM controller U1 (charger)', designator: 'U1', assembly: 'control-board', position: [-8.5, PCB_TOP, 11.5], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'dip16', marking: 'SG3525AN' }, mountedOn: 'pcb-ctrl', removalNote: 'Through-hole DIP-16 in a socket on the control board.' },
+    { id: 'u6', componentId: 'microcontroller', label: 'Microcontroller U6', designator: 'U6', assembly: 'control-board', position: [-12.5, PCB_TOP, 11.5], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'lqfp64', marking: 'MCU 32-BIT' }, mountedOn: 'pcb-ctrl', removalNote: 'Fine-pitch IC soldered to the control board.' },
+    { id: 'u1', componentId: 'pwm-controller', label: 'PWM controller U1 (charger)', designator: 'U1', assembly: 'control-board', position: [-8.5, PCB_TOP, 11.5], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'dip16', marking: 'SG3525' }, mountedOn: 'pcb-ctrl', removalNote: 'Through-hole DIP-16 in a socket on the control board.' },
     { id: 'u7', componentId: 'voltage-sensor', label: 'Voltage-sense module U7', designator: 'U7', assembly: 'control-board', position: [-5, PCB_TOP, 11.5], explodeOffset: [0, 3, 0], geometry: { factory: 'voltage-sensor', marking: 'V-SENSE ISO' }, mountedOn: 'pcb-ctrl', removalNote: 'Plug-in module on header pins; unplug the HV sense leads first.' },
     { id: 'disp', componentId: 'display-board', label: 'Display board', assembly: 'display-board', position: [6.5, 3.0, 14.4], explodeOffset: [0, 4, 9], geometry: { factory: 'display-board', lines: ['AC  230V 50.0Hz', 'BAT 52.4V  86%', 'PV  1.24kW MPPT'] }, removalNote: 'Screwed to the inside of the front panel; a ribbon cable runs to the control board.' },
   ],

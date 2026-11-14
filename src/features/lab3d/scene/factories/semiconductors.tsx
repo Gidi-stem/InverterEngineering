@@ -11,7 +11,7 @@ import { markingTexture } from '../textures'
 export function To247({ kind, marking }: { kind: 'mosfet' | 'igbt'; marking: string }) {
   const { w, bodyH, t, leadL, tabAbove, pitch, holeY } = TO247
   const pinRow = kind === 'mosfet' ? 'G   D   S' : 'G   C   E'
-  const front = labelMaterial(`to247|${marking}`, markingTexture([marking, kind === 'mosfet' ? 'N-CH MOSFET' : 'IGBT 650V', pinRow], '#1a1c21', '#c9d0dc', { w: 256, h: 320 }))
+  const front = labelMaterial(`to247|${marking}`, markingTexture([marking, kind === 'mosfet' ? 'N-CHANNEL' : 'CO-PACK DIODE', pinRow], '#1a1c21', '#c9d0dc', { w: 256, h: 320 }))
   const tabGeo = cachedGeometry('to247-tab', () => {
     const s = new THREE.Shape()
     s.moveTo(-w / 2, 0)

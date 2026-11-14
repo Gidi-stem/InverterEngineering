@@ -17,7 +17,7 @@ const mosfets: ModelPart[] = [-8.2, -6.0, -3.8, -1.6].map((x, i) => ({
   assembly: 'power-board',
   position: [x, PCB_TOP, -1.15],
   explodeOffset: [0, 5, 2],
-  geometry: { factory: 'to247', kind: 'mosfet', marking: 'IRFP4468' },
+  geometry: { factory: 'to247', kind: 'mosfet', marking: 'N-MOS 100V' },
   mountedOn: 'pcb-main',
   removalNote: 'Clamped to the heat sink and soldered to the board.',
 }))
@@ -67,7 +67,7 @@ export const SQ1K: InverterModel = {
     },
     ...mosfets,
     ...[-7.5, -4.0].map((x, i): ModelPart => ({ id: `c${i + 1}`, componentId: 'capacitor', label: `Battery-bus capacitor C${i + 1}`, designator: `C${i + 1}`, assembly: 'power-board', position: [x, PCB_TOP, 2.6], explodeOffset: [0, 4, 0], geometry: { factory: 'electrolytic', diameter: 2.5, height: 4, rating: '4700µF 25V 105°C' }, mountedOn: 'pcb-main', removalNote: 'Soldered to the board.' })),
-    { id: 'u1', componentId: 'pwm-controller', label: 'PWM oscillator U1', designator: 'U1', assembly: 'power-board', position: [-0.6, PCB_TOP, 3.2], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'dip16', marking: 'SG3525AN' }, mountedOn: 'pcb-main', removalNote: 'DIP-16 in a socket.' },
+    { id: 'u1', componentId: 'pwm-controller', label: 'PWM oscillator U1', designator: 'U1', assembly: 'power-board', position: [-0.6, PCB_TOP, 3.2], explodeOffset: [0, 3, 0], geometry: { factory: 'ic', pkg: 'dip16', marking: 'SG3525' }, mountedOn: 'pcb-main', removalNote: 'DIP-16 in a socket.' },
     { id: 'r1', componentId: 'resistor', label: 'Bleeder resistor R1 (1 kΩ)', designator: 'R1', assembly: 'power-board', position: [-0.6, PCB_TOP, 5.6], explodeOffset: [0, 3, 0.5], geometry: { factory: 'axial-resistor', ohms: 1000, tolerancePct: 5, watts: 2 }, mountedOn: 'pcb-main', removalNote: 'Soldered across the bus capacitors.' },
     { id: 'd1', componentId: 'diode', label: 'Diode D1', designator: 'D1', assembly: 'power-board', position: [2.5, PCB_TOP, 5.6], explodeOffset: [0, 3, 0.5], geometry: { factory: 'axial-diode', marking: '1N5408' }, mountedOn: 'pcb-main', removalNote: 'Soldered to the board.' },
     { id: 't1', componentId: 'transformer', label: 'Centre-tapped transformer T1', designator: 'T1', assembly: 'magnetics', position: [8, 0.15, 2], explodeOffset: [7, 5, 0], geometry: { factory: 'ei-transformer', size: [7, 6, 6], rating: '1kVA 2×12/230V' }, removalNote: 'Four bolts; its leads must be disconnected first.' },

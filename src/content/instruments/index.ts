@@ -1,0 +1,28 @@
+import type { InstrumentId, SafetyKey } from '../../types/domain'
+
+/** Virtual instruments referenced by test procedures. Phase 8 makes each one interactive against the simulation. */
+export const INSTRUMENTS: Record<InstrumentId, { name: string; short: string; description: string }> = {
+  dmm: { name: 'Digital multimeter', short: 'DMM', description: 'Voltage (DC/AC), resistance, continuity, diode test and, on many meters, capacitance.' },
+  scope: { name: 'Oscilloscope', short: 'Scope', description: 'Displays voltage against time: switching waveforms, gate pulses, ripple. Mains-referenced signals need a differential probe.' },
+  clamp: { name: 'Clamp meter', short: 'Clamp', description: 'Measures current through a conductor passed through its jaws, without breaking the circuit (DC clamps use a Hall sensor).' },
+  lcr: { name: 'LCR meter', short: 'LCR', description: 'Measures inductance, capacitance and resistance at a chosen test frequency.' },
+  esr: { name: 'ESR meter', short: 'ESR', description: 'Measures a capacitor’s equivalent series resistance with a small AC signal, usually possible in circuit when discharged.' },
+  insulation: { name: 'Insulation resistance tester', short: 'IR tester', description: 'Applies a test voltage (e.g. 500 V DC) and measures insulation resistance in MΩ. Only on isolated, discharged equipment.' },
+  'earth-bond': { name: 'Earth-continuity tester', short: 'Earth bond', description: 'Measures low resistance of protective-earth paths, often with a higher test current than a multimeter.' },
+  thermal: { name: 'Thermal camera / thermocouple', short: 'Thermal', description: 'Measures surface temperature to find hot spots under load.' },
+  psu: { name: 'Bench power supply (current-limited)', short: 'Bench PSU', description: 'Provides a controlled, current-limited voltage to power a part safely on the bench.' },
+}
+
+/** Shared safety preconditions. Procedures list the keys that apply; the text is written once here. */
+export const SAFETY_TEXT: Record<SafetyKey, string> = {
+  isolate: 'Isolate every source (battery, PV, AC), lock off and tag before touching any internal part.',
+  discharge: 'Discharge the DC-bus capacitors with a rated discharge tool and verify below 50 V with a meter before probing.',
+  esd: 'Static-sensitive: wear an earthed wrist strap and handle the part by its body.',
+  'live-qualified': 'Live measurement: qualified person only, under supervision, using insulated probes and one-hand technique.',
+  'pv-daylight': 'PV conductors stay live in daylight; open the PV breaker and never disconnect a PV connector under load.',
+  'battery-short': 'Batteries can deliver thousands of amps into a short: remove rings and watches and use insulated tools.',
+  hot: 'The part may be hot after operation; allow it to cool or use heat-resistant gloves.',
+  heavy: 'Heavy part: lift with correct posture or with two people.',
+  'cat-rated': 'Use a meter and probes rated for the circuit category and voltage (e.g. CAT III 600 V or higher).',
+  'current-limit': 'Set the bench supply current limit low (e.g. 100 mA) before connecting.',
+}
