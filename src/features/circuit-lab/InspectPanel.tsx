@@ -6,7 +6,7 @@ import type { CircuitAnalysis } from '../../engine/circuit/validate'
 import type { CircuitDoc, ParamDef, PlacedPart } from '../../engine/circuit/types'
 import { Button, Tag } from '../../ui/primitives'
 import { floatingNodes, modeLabel } from './analysis'
-import { eng, terminalLabel, volts } from './format'
+import { eng, shown, terminalLabel, volts } from './format'
 import type { Selection } from './Workspace'
 
 interface Props {
@@ -26,7 +26,7 @@ const tref = (doc: CircuitDoc, partId: string, tid: string) => {
   return p ? `${p.label}.${terminalLabel(p, tid)}` : `${partId}.${tid}`
 }
 
-function ParamInput({ part, def, onCommit }: { part: PlacedPart; def: ParamDef; onCommit: (v: number) => void }) {
+export function ParamInput({ part, def, onCommit }: { part: PlacedPart; def: ParamDef; onCommit: (v: number) => void }) {
   const current = part.params[def.key] ?? def.default
   const [text, setText] = useState<string | null>(null)
   const commit = () => {
@@ -40,6 +40,7 @@ function ParamInput({ part, def, onCommit }: { part: PlacedPart; def: ParamDef; 
     <label className="grid grid-cols-[1fr_auto] items-center gap-2 text-xs">
       <span className="text-ink-300">
         {def.label}
+        {def.simOnly && <span className="ml-1 text-[10px] text-signal-300">sim</span>}
         <span className="ml-1 text-ink-500">
           ({def.min}–{def.max} {def.unit})
         </span>
@@ -98,7 +99,7 @@ export function InspectPanel({ doc, analysis, selection, onParam, onState, onRot
           </Link>
         )}
 
-        {(def.states ?? []).map((st) => (
+        {(def.states ?? []).filter((st) => shown(p, st.when)).map((st) => (
           <div key={st.key} className="space-y-1">
             <div className="text-xs text-ink-300">{st.label}</div>
             <div className="inline-flex rounded-md border border-chassis-600 p-0.5" role="group" aria-label={st.label}>
@@ -121,7 +122,7 @@ export function InspectPanel({ doc, analysis, selection, onParam, onState, onRot
         {def.params.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-[11px] font-semibold tracking-wide text-ink-400 uppercase">Parameters</h4>
-            {def.params.map((q) => (
+            {def.params.filter((q) => shown(p, q.when)).map((q) => (
               <ParamInput key={`${p.id}-${q.key}`} part={p} def={q} onCommit={(v) => onParam(p.id, q.key, v)} />
             ))}
             <p className="text-[11px] text-ink-500">Typical educational values, not ratings of a particular manufacturer’s part.</p>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { LEVEL_LABEL, MODULE_BY_ID } from '../../content/modules'
+import { FUNDAMENTALS_CRITERIA, SIM_EXPERIMENT_TITLES } from '../../content/fundamentalsCriteria'
 import { useProgress } from '../../store/progressStore'
 import type { ModuleId } from '../../types/modules'
 import { Icon } from '../../ui/Icon'
@@ -14,6 +15,7 @@ export function ModulePage({ moduleId }: { moduleId: ModuleId }) {
   const m = MODULE_BY_ID[moduleId]
   const visit = useProgress((s) => s.visitModule)
   const completed = useProgress((s) => s.completedLessons)
+  const activities = useProgress((s) => s.activities)
   useEffect(() => {
     visit(moduleId)
   }, [visit, moduleId])
@@ -52,6 +54,17 @@ export function ModulePage({ moduleId }: { moduleId: ModuleId }) {
         </div>
       )}
 
+      {moduleId === 'fundamentals' && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal-500/40 bg-signal-500/5 px-4 py-3 text-sm">
+          <span className="text-ink-300">
+            <span className="font-medium text-ink-100">Learn by simulation.</span> Each lesson is completed through guided experiments in the Circuit Connection Laboratory: build or open the circuit, run it on the oscilloscope, compare measured and calculated values, and answer the questions.
+          </span>
+          <Link to="/circuit-lab?ex=sim-01" className="inline-flex min-h-10 items-center rounded-md border border-signal-400 bg-signal-500 px-3.5 font-medium text-white hover:bg-signal-400">
+            Open the experiments
+          </Link>
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Panel title="Lesson sequence">
           <ol className="flex flex-col divide-y divide-chassis-700">
@@ -60,7 +73,18 @@ export function ModulePage({ moduleId }: { moduleId: ModuleId }) {
               return (
                 <li key={l.id} className="flex items-center gap-3 py-2.5">
                   <span className={`readout grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs ${done ? 'border-live-400 text-live-400' : 'border-chassis-600 text-ink-500'}`}>{done ? '✓' : i + 1}</span>
-                  <span className="min-w-0 flex-1 text-sm text-ink-100">{l.title}</span>
+                  <span className="min-w-0 flex-1 text-sm text-ink-100">
+                    {l.title}
+                    {moduleId === 'fundamentals' && (
+                      <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-500">
+                        {(FUNDAMENTALS_CRITERIA.find((c) => c.lessonId === l.id)?.experiments ?? []).map((x) => (
+                          <Link key={x} to={`/circuit-lab?ex=${x}`} className={`hover:underline ${activities.some((a) => a.activityId === `sim:${x}`) ? 'text-live-400' : 'text-signal-300'}`}>
+                            {SIM_EXPERIMENT_TITLES[x]}
+                          </Link>
+                        ))}
+                      </span>
+                    )}
+                  </span>
                   <span className="readout whitespace-nowrap text-xs text-ink-500">{l.minutes} min</span>
                 </li>
               )

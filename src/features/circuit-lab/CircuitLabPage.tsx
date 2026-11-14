@@ -17,8 +17,15 @@ import { ExercisePanel } from './ExercisePanel'
 import { InspectPanel } from './InspectPanel'
 import { Toolbox } from './Toolbox'
 import { Workspace, type Selection, type WorkspaceApi } from './Workspace'
+import { SIM_EXPERIMENTS, SIM_EXPERIMENT_BY_ID } from '../../content/simExperiments'
+import { ExperimentPanel } from './sim/ExperimentPanel'
+import { Scope } from './sim/Scope'
+import { SimBar } from './sim/SimBar'
+import { SimPanel } from './sim/SimPanel'
+import { defaultScope, scopeFromExperiment } from './sim/defaults'
+import { useSimulation, type ScopeSettings } from './sim/useSimulation'
 
-type Tab = 'exercise' | 'inspect' | 'checks'
+type Tab = 'exercise' | 'simulate' | 'inspect' | 'checks'
 const EMPTY: CircuitDoc = { version: 1, parts: [], wires: [] }
 
 /**
@@ -28,8 +35,9 @@ const EMPTY: CircuitDoc = { version: 1, parts: [], wires: [] }
 export default function CircuitLabPage() {
   const [params, setParams] = useSearchParams()
   const exId = params.get('ex')
-  const exercise = exId && CIRCUIT_EXERCISE_BY_ID[exId] ? CIRCUIT_EXERCISE_BY_ID[exId] : exId === SANDBOX ? null : CIRCUIT_EXERCISES[0]
-  const key = exercise?.id ?? SANDBOX
+  const experiment = exId ? (SIM_EXPERIMENT_BY_ID[exId] ?? null) : null
+  const exercise = experiment ? null : exId && CIRCUIT_EXERCISE_BY_ID[exId] ? CIRCUIT_EXERCISE_BY_ID[exId] : exId === SANDBOX ? null : CIRCUIT_EXERCISES[0]
+  const key = experiment?.id ?? exercise?.id ?? SANDBOX
 
   const stored = useCircuitLab((s) => s.docs[key])
   const savedAt = useCircuitLab((s) => s.savedAt[key])
@@ -39,7 +47,8 @@ export default function CircuitLabPage() {
   const commitDoc = useCircuitLab((s) => s.commit)
   const undoLast = useCircuitLab((s) => s.undoLast)
   const restore = useCircuitLab((s) => s.restore)
-  const doc = stored ?? exercise?.starter ?? EMPTY
+  const starter = experiment?.circuit ?? exercise?.starter ?? EMPTY
+  const doc = stored ?? starter
 
   const completed = useProgress((s) => s.completedExercises)
   const level = useProgress((s) => s.level)
@@ -52,7 +61,23 @@ export default function CircuitLabPage() {
   const [selection, setSelection] = useState<Selection>(null)
   const [wireFrom, setWireFrom] = useState<TerminalRef | null>(null)
   const [armed, setArmed] = useState<PartType | null>(null)
-  const [tab, setTab] = useState<Tab>('exercise')
+  // Panel tab and Build/Simulate mode belong to the workspace: opening another circuit starts from its defaults.
+  const [tabState, setTabState] = useState<{ key: string; tab: Tab }>({ key, tab: 'exercise' })
+  const tab = tabState.key === key ? tabState.tab : 'exercise'
+  const setTab = (t: Tab) => setTabState({ key, tab: t })
+  const [modeState, setModeState] = useState<{ key: string; mode: 'build' | 'simulate' }>({ key, mode: experiment ? 'simulate' : 'build' })
+  const mode = modeState.key === key ? modeState.mode : experiment ? 'simulate' : 'build'
+  const setMode = (m: 'build' | 'simulate') => setModeState({ key, mode: m })
+  const [scope, setScope] = useState<{ key: string; s: ScopeSettings }>(() => ({ key, s: experiment ? scopeFromExperiment(experiment) : defaultScope(doc) }))
+  const scopeSettings = scope.key === key ? scope.s : experiment ? scopeFromExperiment(experiment) : defaultScope(doc)
+  const setScopeSettings = (s: ScopeSettings) => setScope({ key, s })
+  const [speed, setSpeed] = useState(5)
+  const [stepSize, setStepSize] = useState<'1' | '10' | 'div'>('div')
+  const [timeStep, setTimeStep] = useState<number | undefined>(undefined)
+  const [spectrumOn, setSpectrumOn] = useState(false)
+  const sim = useSimulation(key, doc, scopeSettings, speed, timeStep)
+  const activities = useProgress((s) => s.activities)
+  const experimentDone = (id: string) => activities.some((a) => a.activityId === `sim:${id}`)
   const [focus, setFocus] = useState<string[] | null>(null)
   const [focusNode, setFocusNode] = useState<number | null>(null)
   const [showV, setShowV] = useState(true)
@@ -66,6 +91,8 @@ export default function CircuitLabPage() {
   useEffect(() => {
     visit('circuit-lab')
   }, [visit])
+
+
 
   const analysis = useMemo(() => analyseCircuit(doc), [doc])
   const visual = useMemo(() => partVisuals(doc, analysis), [doc, analysis])
@@ -97,9 +124,9 @@ export default function CircuitLabPage() {
       commit(r.doc)
       setSelection({ kind: 'part', id: r.id })
       setArmed(null)
-      setTab('inspect')
+      setTabState({ key, tab: 'inspect' })
     },
-    [doc, commit],
+    [doc, commit, key],
   )
 
   const wire = (a: TerminalRef, b: TerminalRef) => {
@@ -250,12 +277,22 @@ export default function CircuitLabPage() {
             data-testid="exercise-select"
             className="min-h-10 max-w-[78vw] rounded-md border border-chassis-600 bg-chassis-900 px-2 text-sm text-ink-100"
           >
+            <optgroup label="Circuit exercises">
             {CIRCUIT_EXERCISES.map((e, i) => (
               <option key={e.id} value={e.id}>
                 {i + 1}. {e.title}
                 {completed.includes(e.id) ? ' ✓' : ''}
               </option>
             ))}
+            </optgroup>
+            <optgroup label="Simulation experiments">
+              {SIM_EXPERIMENTS.map((e, i) => (
+                <option key={e.id} value={e.id}>
+                  E{i + 1}. {e.title}
+                  {experimentDone(e.id) ? ' ✓' : ''}
+                </option>
+              ))}
+            </optgroup>
             <option value={SANDBOX}>Free build (sandbox)</option>
           </select>
         </label>
@@ -281,6 +318,24 @@ export default function CircuitLabPage() {
 
         <section className="panel relative flex h-[62vh] min-h-[380px] flex-col overflow-hidden xl:h-auto" aria-label="Circuit workspace">
           <div className="flex items-center gap-0.5 overflow-x-auto border-b border-chassis-700 px-1.5 py-1 [&_button]:min-h-9 [&_button]:shrink-0 [&_button]:px-2.5">
+            <div role="tablist" aria-label="Laboratory mode" className="mr-1 flex shrink-0 rounded-md border border-chassis-600 p-0.5">
+              {(['build', 'simulate'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === m}
+                  data-testid={`mode-${m}`}
+                  onClick={() => {
+                    setMode(m)
+                    if (m === 'simulate') setTab(experiment ? 'exercise' : 'simulate')
+                  }}
+                  className={`min-h-8 rounded px-2.5 text-xs font-medium ${mode === m ? 'bg-signal-500 text-white' : 'text-ink-300 hover:text-ink-100'}`}
+                >
+                  {m === 'build' ? 'Build' : 'Simulate'}
+                </button>
+              ))}
+            </div>
             <Button variant="ghost" onClick={rotateSelected} disabled={selection?.kind !== 'part'} title="Rotate 90° (R)" data-testid="btn-rotate">
               Rotate
             </Button>
@@ -328,7 +383,7 @@ export default function CircuitLabPage() {
                     variant="danger"
                     data-testid="btn-reset-confirm"
                     onClick={() => {
-                      restore(key, cloneDoc(exercise?.starter ?? EMPTY))
+                      restore(key, cloneDoc(starter))
                       setSelection(null)
                       setConfirmReset(false)
                       setCheck(null)
@@ -402,6 +457,36 @@ export default function CircuitLabPage() {
             )}
           </div>
 
+          {mode === 'simulate' && (
+            <div className="flex h-[300px] shrink-0 flex-col border-t border-chassis-700 xl:h-[46%]" data-testid="sim-area">
+              <SimBar
+                state={sim.state}
+                onRun={sim.run}
+                onPause={sim.pause}
+                onStop={sim.stop}
+                onReset={sim.reset}
+                onStep={() => sim.step(stepSize === 'div' ? Math.max(1, Math.round(scopeSettings.timeDiv / (sim.h ?? 1e-5))) : Number(stepSize))}
+                stepSize={stepSize}
+                onStepSize={setStepSize}
+                speed={speed}
+                onSpeed={setSpeed}
+                settings={scopeSettings}
+                onSettings={setScopeSettings}
+                spectrum={spectrumOn}
+                onSpectrum={setSpectrumOn}
+              />
+              <div className="relative min-h-0 flex-1">
+                <Scope frame={sim.frame} settings={scopeSettings} showSpectrum={spectrumOn} />
+                {sim.notice && (
+                  <button type="button" onClick={sim.dismissNotice} className="absolute top-6 right-2 left-2 rounded border border-caution-400/50 bg-chassis-950/95 px-2 py-1 text-left text-xs text-caution-400">
+                    {sim.notice} ✕
+                  </button>
+                )}
+                {sim.error && <div className="absolute inset-x-2 bottom-6 rounded border border-danger-400/60 bg-[#2a1216]/95 px-2 py-1 text-xs text-ink-100" data-testid="sim-error">{sim.error}</div>}
+              </div>
+            </div>
+          )}
+
           <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-chassis-700 px-3 py-1.5 text-[11px] text-ink-400" data-testid="status-bar">
             <span>
               {doc.parts.length} parts · {doc.wires.length} wires · {analysis.topo.nodes.length} nodes
@@ -420,7 +505,8 @@ export default function CircuitLabPage() {
           <div role="tablist" aria-label="Side panel" className="flex border-b border-chassis-700">
             {(
               [
-                ['exercise', exercise ? 'Exercise' : 'Free build'],
+                ['exercise', experiment ? 'Experiment' : exercise ? 'Exercise' : 'Free build'],
+                ['simulate', 'Simulate'],
                 ['inspect', 'Inspect'],
                 ['checks', `Checks${counts.danger + counts.warning ? ` (${counts.danger + counts.warning})` : ''}`],
               ] as const
@@ -439,7 +525,43 @@ export default function CircuitLabPage() {
             ))}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {tab === 'exercise' && (
+            {tab === 'simulate' && (
+              <SimPanel
+                doc={doc}
+                state={sim.state}
+                frame={sim.frame}
+                probes={sim.probes}
+                h={sim.h}
+                computeMs={sim.computeMs}
+                error={sim.error}
+                settings={scopeSettings}
+                onSettings={setScopeSettings}
+                timeStep={timeStep}
+                onTimeStep={setTimeStep}
+                onParam={(id, k, v) => commit(setParam(doc, id, k, v))}
+                onState={(id, k, v) => commit(setState(doc, id, k, v))}
+                runAc={sim.runAc}
+              />
+            )}
+            {tab === 'exercise' && experiment && (
+              <ExperimentPanel
+                key={experiment.id}
+                experiment={experiment}
+                doc={doc}
+                completed={experimentDone(experiment.id)}
+                onMeasure={() => sim.runExperiment(experiment.id, doc)}
+                onRestore={() => {
+                  restore(key, cloneDoc(experiment.circuit))
+                  setScopeSettings(scopeFromExperiment(experiment))
+                  sim.clear()
+                }}
+                onComplete={(score, max) => {
+                  if (!experimentDone(experiment.id)) recordActivity({ activityId: `sim:${experiment.id}`, label: `Simulation experiment: ${experiment.title}`, level, score, maxScore: max })
+                  flash('Experiment complete: recorded in your progress.', 'ok')
+                }}
+              />
+            )}
+            {tab === 'exercise' && !experiment && (
               <ExercisePanel
                 exercise={exercise}
                 result={result}

@@ -1,4 +1,5 @@
 import type { ProgressData } from '../types/progress'
+import { FUNDAMENTALS_CRITERIA } from './fundamentalsCriteria'
 
 /**
  * Completion criteria for lessons that are earned by doing (3D Lab l3d-01…06, Component Library
@@ -29,7 +30,10 @@ export const LIBRARY_LESSONS: LessonCriteria[] = [
   { lessonId: 'cmp-05', activities: ['library:compare:mosfet-vs-igbt', 'library:compare:transformer-vs-inductor'], summary: 'Complete the MOSFET vs IGBT and transformer vs inductor comparison checks.' },
 ]
 
-export const ALL_LESSON_CRITERIA = [...LAB3D_LESSONS, ...LIBRARY_LESSONS]
+/** Inverter Fundamentals (fun-01…07): earned by completing the Phase 5 simulation experiments. */
+export const FUNDAMENTALS_LESSONS: LessonCriteria[] = FUNDAMENTALS_CRITERIA.map((c) => ({ lessonId: c.lessonId, activities: c.experiments.map((x) => `sim:${x}`), summary: c.summary }))
+
+export const ALL_LESSON_CRITERIA = [...LAB3D_LESSONS, ...LIBRARY_LESSONS, ...FUNDAMENTALS_LESSONS]
 
 export function lessonProgress(p: ProgressData, c: LessonCriteria): { done: number; total: number } {
   const ins = c.inspect ?? []

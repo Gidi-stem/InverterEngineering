@@ -6,6 +6,8 @@ import type { CircuitDoc, PartType, Rotation } from './types'
  *   circuit().add('B1', 'battery', 0, 0).add('R1', 'resistor', 4, -2).wire('B1.+', 'R1.1').doc
  * The part id doubles as its label.
  */
+export type CircuitBuilder = ReturnType<typeof circuit>
+
 export function circuit() {
   const doc: CircuitDoc = { version: 1, parts: [], wires: [] }
   const api = {

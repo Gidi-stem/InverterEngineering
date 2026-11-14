@@ -13,7 +13,7 @@
 | Zustand | 5.1 (`persist` middleware for progress; plain store for the 3D lab) |
 | Persistence | IndexedDB via `idb-keyval`, with an in-memory fallback; every load is validated and merged (see §7) |
 | Routing | `react-router-dom` `HashRouter`, so deep links work on any static host |
-| Tests / lint | Vitest 5.1 (162 tests) / oxlint 1.9 (0 warnings) |
+| Tests / lint | Vitest 5.1 (196 tests) / oxlint 1.9 (0 warnings) |
 
 Scripts: `npm run dev`, `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`, `npm run preview`.
 
@@ -49,7 +49,8 @@ src/
   engine/waveform/     waveforms.ts, scale.ts (+ tests)
   engine/circuit/      types, parts (20-part catalogue), topology (union-find nodes), solve (MNA), roles,
                        validate (fault rules), exercises (evaluators), edit (pure editing ops), build (+ tests)
-  engine/simulation/ solar/ faults/    (Phases 5, 7, 9)
+  engine/sim/          netlist, sources, transient (TransientSim), linalg, analysis, ac, record, session (+ tests)
+  engine/solar/ faults/    (Phases 7, 9)
   store/               progressStore.ts, idbStorage.ts, selectors.ts, sanitize.ts (validate + merge), id.ts (+ tests)
   ui/                  primitives, Icon, ErrorBoundary, symbols/ (IEC schematic symbols for all 24 components)
   features/
@@ -70,6 +71,7 @@ src/
       logic/           search.ts (ranked search, filters, parts-in-models), geometry.ts, format.ts (+ tests)
     circuit-lab/       CircuitLabPage, Workspace (SVG editor), Toolbox, Inspect/Checks/Exercise panels, PartGlyph,
                        circuitStore (saved circuits + undo), analysis.ts, format.ts (+ tests)
+      sim/             sim.worker, protocol, useSimulation, Scope, SimBar, SimPanel, Bode, ExperimentPanel, defaults, scale
     build/ solar/ instruments/ repair/ assessments/   (Phases 5–10)
 docs/ARCHITECTURE.md, docs/PHASE-2-PLAN.md, docs/PHASE-2-REPORT.md, docs/PHASE-3-REPORT.md
 ```
@@ -94,15 +96,17 @@ docs/ARCHITECTURE.md, docs/PHASE-2-PLAN.md, docs/PHASE-2-REPORT.md, docs/PHASE-3
 
 ## 5. Simulation strategy
 
-The simulator is educational, deterministic and physically grounded (quasi-steady-state, not SPICE). No random numbers are used for any electrical value.
+The simulator is educational, deterministic and physically grounded. Since Phase 5, circuits built in the lab are simulated in the time domain by a SPICE-style transient engine (modified nodal analysis with numerical integration). No random numbers are used for any electrical value.
 
 | Layer | Model | Status |
 |---|---|---|
 | Waveforms | Ideal H-bridge: square, quasi-square (α), unipolar SPWM, ideal filtered sine, rectified. DFT harmonics, Parseval THD. Tested against closed forms. | Done (Phase 1) |
 | Capacitor discharge | V(t) = V₀·e^(−t/RC), E = ½CV², I = V/R, P = V²/R, t_safe = RC·ln(V₀/50 V). Methods: built-in bleeder, 470 Ω/25 W and 2.2 kΩ/10 W tools, screwdriver (refused: peak current > 10 kA). Pulse capacity simplified as rated W × 5 s. | Done (Phase 2) |
-| Operating point | R/RL load, transformer ratio, conduction + switching + magnetic losses, efficiency, I_dc. | Phase 5 |
-| Thermal | T_j = T_amb + P_loss·ΣR_θ; fan failure raises R_θsa. | Phase 5 |
-| Battery | Rint model, coulomb counting with Peukert correction, chemistry cut-offs. | Phase 5 |
+| Transient engine | MNA in the time domain: trapezoidal companion models, backward-Euler restarts after switching events, piecewise-linear devices iterated per step, step subdivision, convergence-failure and instability detection, energy accounting. | Done (Phase 5) |
+| AC analysis | Complex MNA frequency sweep (Bode magnitude/phase, −3 dB, resonance). | Done (Phase 5) |
+| Waveform analysis | Mean, cycle RMS, pk-pk, frequency, duty, harmonic spectrum, THD from simulated samples. | Done (Phase 5) |
+| Thermal | Conduction loss from simulated v·i, switching loss ½·V·I·t_sw per simulated edge, steady-state T_j = T_a + P·R_θ(j-a). Fan failure (R_θsa) arrives with the repair scenarios. | Done (Phase 5) / Phase 9 |
+| Battery | Internal-resistance model (Phases 4–5); state of charge, Peukert and chemistry cut-offs with the inverter projects. | Phase 6 |
 | Circuit lab | Node graph (union-find), modified nodal analysis with piecewise-linear diodes/LEDs, gate-controlled MOSFET/IGBT with body diodes, current-limited supply, relays, ideal transformer (AC snapshots at ±peak). 19 fault rules over nodes and solved values. RC τ from Thevenin resistance. | Done (Phase 4) |
 | Solar | Single-diode PV model, P&O MPPT, PWM charging, priority dispatcher with transfer switching. | Phase 7 |
 | Faults | Scenario → parameter overrides; instruments read the faulted simulation. | Phase 9 |
@@ -168,7 +172,21 @@ Model assumptions are displayed beside each result in the UI.
 
 **Bundle.** The page is lazy-loaded: 38 kB gzip; the dashboard bundle stays at 103.6 kB gzip.
 
-## 9. Persistence and robustness
+## 9. Electrical simulation engine (Phase 5)
+
+**Numerical method.** Modified nodal analysis in the time domain with a fixed step h (automatic: AC period/400, PWM period/200, SPWM carrier/100, otherwise 20 µs; the user can override it). Capacitors and inductors use trapezoidal companion models, which are second order and add no numerical damping (an LC tank's energy follows the analytic e^(−Rt/L) to 10⁻⁶). Backward Euler is used for the first steps and for two steps after any device state change, the standard cure for trapezoidal ringing at discontinuities. Piecewise-linear devices (Phase 4 models) are iterated to a consistent state at every step. A step that does not settle is subdivided to h/8; if it still fails, the run stops with a convergence-failure message and nothing after that time is shown. NaN, Inf or |V| > 1 MV stops the run as unstable.
+
+**Netlist.** `engine/sim/netlist.ts` compiles a `CircuitDoc` over the Phase 4 topology into SPICE-like primitives: R, Norton V source, current-limited supply, C, L (with an internal node for R_dc), piecewise-linear diode, controlled switch (gate, relay, fuse, breaker, manual), IGBT channel, and ideal transformer (branch current) with series winding resistances and magnetising inductance. Because the netlist comes from the same graph, a circuit built for a Phase 4 exercise runs unchanged.
+
+**Sources.** AC sine; the pulse/gate generator provides static, PWM (frequency, duty, phase, inverted, dead time) and bipolar SPWM (carrier, modulating frequency, index). Dead time delays each turn-on edge, as a gate-driver dead-time circuit does.
+
+**Measurements and energy.** Signals are node voltages, voltage across a part, current through a part, V_GS/V_GE, transformer primary/secondary/magnetising current, and differences of any two (`T:part.terminal`, `A|B`). Source and dissipated energies are trapezoidal integrals of v·i (so an ideal switching edge costs nothing). Stored energy is ½CV² + ½LI² from the state variables, and the balance error (delivered − dissipated − stored) is shown to the student.
+
+**Execution.** `SimSession` (pure TypeScript) owns the simulator and a 40 000-row ring buffer (Float32) covering 2.5 screen widths. It produces frames: 600 min/max columns per channel, so PWM edges survive decimation, plus measurements over the displayed window, a spectrum, energy, and per-switch losses over the window. It runs in a module Web Worker (`sim.worker.ts`, 76 kB). `useSimulation` streams time at the chosen speed (divisions per second, or Max) with one request in flight, so slow computers run slower instead of freezing; measured UI frame time while simulating at Max is about 20 ms. Parameter and switch changes while running are applied without resetting state if the topology is unchanged; a topology change restarts the run with a notice.
+
+**Experiments.** `content/simExperiments.ts` holds ten experiments. Expected values are independent closed forms computed from the circuit's current parameters; observations are measured from a full run in the worker. The test suite runs every experiment and requires all observations to agree. Completing experiments earns the Inverter Fundamentals lessons (`content/fundamentalsCriteria.ts`, kept engine-free so the app shell stays light).
+
+## 10. Persistence and robustness
 
 - Progress is a single `ProgressData` record (schema v1) in IndexedDB under `inverter-lab-progress`, kept in memory if storage is unavailable.
 - `sanitizeProgress` validates every field on rehydration and on backup import, and upgrades older records (fields added in Phase 2 get defaults).
@@ -177,7 +195,7 @@ Model assumptions are displayed beside each result in the UI.
 - Without WebGL, the 3D lab shows a clear notice; the parts list, information panels and procedures still work.
 - Saved circuits pass through `sanitizeDoc` (unknown parts, missing terminals, duplicate ids, non-finite or out-of-range values are dropped or clamped), so a damaged save cannot break the editor.
 
-## 10. Safety design
+## 11. Safety design
 
 - A permanent "Simulation environment" indicator; safety notices on every module.
 - Guided disassembly enforces isolation and a verified discharge before any internal part can be touched, and explains every refused step.
@@ -186,7 +204,7 @@ Model assumptions are displayed beside each result in the UI.
 - Every test procedure begins with isolation (or is explicitly a qualified live measurement), and DC-bus parts require a verified discharge (enforced by tests).
 - Circuit lab: practical exercises start with isolated, current-limited, low-voltage sources. Anything above 50 V DC or 25 V AC (source settings or solved node voltages) raises a hazardous-voltage warning and a "Simulated only" banner; battery short circuits, shoot-through, reverse-polarity electrolytics and over-rated parts are danger-level and block an exercise pass.
 
-## 11. Roadmap
+## 12. Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -194,8 +212,8 @@ Model assumptions are displayed beside each result in the UI.
 | 2 | 3D inverter dissection laboratory: two models, 24 recognisable part types, 13-field panels, explode/hide/isolate, connection points, guided disassembly/reassembly, discharge simulation, identification challenge and asm-01, learner levels | **Done** (see PHASE-2-REPORT.md) |
 | 3 | Searchable component library: catalogue, technical pages, pinouts, provenance-labelled specifications, virtual-instrument test procedures, comparisons, 3D links | **Done** (see PHASE-3-REPORT.md) |
 | 4 | Circuit connection laboratory: schematic editor, 20 part types, connection graph, MNA solver, fault explanations, ten assessed exercises, saving | **Done** (see PHASE-4-REPORT.md) |
-| 5 | Simulation engine (operating point, thermal, battery), Fundamentals lessons | Next |
-| 6 | Build Your Own Inverter (eight projects) | |
+| 5 | Electrical simulation engine: transient MNA, AC analysis, PWM/SPWM, switching, thermal estimate, oscilloscope, ten experiments, Fundamentals lessons | **Done** (see PHASE-5-REPORT.md) |
+| 6 | Build Your Own Inverter (eight projects) | Next |
 | 7 | Solar and hybrid lab | |
 | 8 | Virtual instruments bound to the simulation | |
 | 9 | Repair workshop (17 scenarios) | |
@@ -203,14 +221,15 @@ Model assumptions are displayed beside each result in the UI.
 
 Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warnings) and `npm run build` pass; every route and control is smoke-tested in a browser (desktop, tablet, 390 px phone, plain-HTTP LAN access) with no console errors from app code; 3D rendering is checked with headless Chromium (SwiftShader WebGL 2); earlier phases are re-checked.
 
-## 12. Known limitations after Phase 4
+## 13. Known limitations after Phase 5
 
-- Seven sections still show only their syllabus; their workspaces arrive in the phases above.
+- Six sections still show only their syllabus; their workspaces arrive in the phases above.
 - Two of the ten badges and the project and troubleshooting counters depend on later phases (labelled in the UI).
 - 3D parts are educational representations built from primitives: proportions and pinouts follow real packages, but surface detail is simplified.
 - In the guided procedure, soldered parts are "removed" individually for inspection; in a real repair, boards are usually replaced as a unit (stated in the instructions).
-- Discharge pulse capacity uses a simplified rated W × 5 s rule; the waveform bench still models an ideal bridge until Phase 5.
+- Discharge pulse capacity uses a simplified rated W × 5 s rule. The dashboard waveform bench still shows ideal formula waveforms (labelled); circuit waveforms now come from the transient engine.
 - Test-procedure readings are representative teaching values; interactive instruments connected to the simulation arrive in Phase 8.
-- Circuit lab: DC and quasi-static AC only. Capacitors are open at DC and inductors are their winding resistance; switching transients, ripple waveforms, dead time, magnetic saturation and thermal effects are not simulated. RC curves are exponential responses calculated from the measured τ; filter ripple is the labelled approximation ΔV ≈ I/(2fC). Semiconductors are piecewise-linear. Wires are drawn with a simple orthogonal route and may cross parts.
+- Transient engine: piecewise-linear semiconductors with instantaneous switching and ideal gates (no gate charge, no reverse recovery). There is no transformer saturation or leakage inductance, and no capacitor ESR. Fuses and breakers use a simplified I²t model; relays have no operate time. Switching loss uses a typical t_sw parameter; T_j is a steady-state estimate without thermal capacitance. The step is fixed, so PWM edges are quantised to h (≤ 0.5 % of a period with the automatic step), and events faster than h carry a reported energy error. Battery state of charge is not modelled yet.
+- Circuit editor: wires use a simple orthogonal route and may cross parts.
 - "Studied" means an entry or 3D panel was opened; reading depth is not measured.
 - Progress and saved circuits are stored per browser; backup/restore and circuit export move them between devices.

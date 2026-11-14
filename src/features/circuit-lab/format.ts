@@ -68,5 +68,8 @@ export function partValue(p: PlacedPart): string {
   }
 }
 
+/** Whether a parameter/state applies in the part's current mode (ParamDef/StateDef `when`). */
+export const shown = (p: PlacedPart, when?: { state: string; values: number[] }) => !when || when.values.includes(p.states[when.state] ?? PART_DEFS[p.type].states?.find((s) => s.key === when.state)?.default ?? 0)
+
 export const partName = (p: PlacedPart) => PART_DEFS[p.type].name
 export const terminalLabel = (p: PlacedPart, tid: string) => PART_DEFS[p.type].terminals.find((t) => t.id === tid)?.label ?? tid

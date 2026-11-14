@@ -27,7 +27,7 @@ export const MODULES: LearningModule[] = [
     icon: 'book',
     level: 'foundation',
     phase: 5,
-    status: 'planned',
+    status: 'live',
     summary:
       'Why we convert DC to AC, how switching devices synthesise an alternating voltage, and how waveform quality is measured.',
     objectives: [

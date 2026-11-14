@@ -44,6 +44,10 @@ export interface ParamDef {
   min: number
   max: number
   step?: number
+  /** Show only when a state has one of these values (e.g. generator settings per mode). */
+  when?: { state: string; values: number[] }
+  /** Used only by the transient simulation (Phase 5); the DC/±peak analysis ignores it. */
+  simOnly?: boolean
 }
 
 /** Discrete operating state the student can set, e.g. switch open/closed, gate high/low. */
@@ -52,6 +56,7 @@ export interface StateDef {
   label: string
   options: { value: number; label: string }[]
   default: number
+  when?: { state: string; values: number[] }
 }
 
 export type PartGroup = 'sources' | 'passives' | 'semiconductors' | 'magnetics' | 'protection' | 'switching' | 'loads' | 'reference'
