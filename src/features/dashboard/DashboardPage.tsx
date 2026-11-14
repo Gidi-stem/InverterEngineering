@@ -65,7 +65,7 @@ export function DashboardPage() {
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatTile label="Lessons completed" value={`${s.lessons.done}/${s.lessons.total}`} detail="across all modules" frac={s.lessons.done / s.lessons.total} />
-        <StatTile label="Practical exercises" value={`${s.exercises.done}/${s.exercises.total}`} detail="Circuit Lab · from Phase 4" frac={s.exercises.done / s.exercises.total} />
+        <StatTile label="Practical exercises" value={`${s.exercises.done}/${s.exercises.total}`} detail="Circuit Connection Laboratory" frac={s.exercises.done / s.exercises.total} />
         <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="Build workshop · from Phase 6" frac={s.projects.done / s.projects.total} />
         <StatTile label="Assessment average" value={pct(s.assessments.averagePct)} detail={s.assessments.taken ? `${s.assessments.taken} of ${s.assessments.total} attempted` : 'Assessments · from Phase 10'} />
         <StatTile label="Troubleshooting success" value={pct(s.troubleshooting.ratePct)} detail={s.troubleshooting.attempts ? `${s.troubleshooting.correct} correct of ${s.troubleshooting.attempts}` : 'Repair workshop · from Phase 9'} />

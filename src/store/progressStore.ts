@@ -1,39 +1,11 @@
 import { create } from 'zustand'
-import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
-import { del, get, set } from 'idb-keyval'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { idbStorage } from './idbStorage'
 import type { SimulationRun } from '../types/domain'
 import type { ModuleId } from '../types/modules'
 import type { ActivityRecord, LearnerLevel, ProgressData } from '../types/progress'
 import { newId } from './id'
 import { looksLikeBackup, mergeProgress, sanitizeProgress } from './sanitize'
-
-/** IndexedDB-backed storage with in-memory fallback (private mode / sandboxed frames). */
-const memory = new Map<string, string>()
-const idbStorage: StateStorage = {
-  getItem: async (name) => {
-    try {
-      return (await get<string>(name)) ?? memory.get(name) ?? null
-    } catch {
-      return memory.get(name) ?? null
-    }
-  },
-  setItem: async (name, value) => {
-    memory.set(name, value)
-    try {
-      await set(name, value)
-    } catch {
-      /* storage unavailable: keep in memory for this session */
-    }
-  },
-  removeItem: async (name) => {
-    memory.delete(name)
-    try {
-      await del(name)
-    } catch {
-      /* ignore */
-    }
-  },
-}
 
 export const emptyProgress = (): ProgressData => ({
   schemaVersion: 1,
@@ -64,6 +36,8 @@ interface ProgressActions {
   completeLesson: (lessonId: string) => void
   recordActivity: (a: Omit<ActivityRecord, 'at'>) => void
   recordAssessment: (assessmentId: string, score: number, maxScore: number) => void
+  /** A practical exercise passed: marks the exercise and its lesson complete. */
+  completeExercise: (exerciseId: string) => void
 }
 
 const ACTION_KEYS = [
@@ -79,6 +53,7 @@ const ACTION_KEYS = [
   'completeLesson',
   'recordActivity',
   'recordAssessment',
+  'completeExercise',
 ] as const
 
 const addUnique = (list: string[], id: string) => (list.includes(id) ? list : [...list, id])
@@ -111,6 +86,7 @@ export const useProgress = create<ProgressState>()(
       recordActivity: (a) => setState((s) => ({ activities: [{ ...a, at: Date.now() }, ...s.activities].slice(0, 300) })),
       recordAssessment: (assessmentId, score, maxScore) =>
         setState((s) => ({ assessments: [...s.assessments, { assessmentId, score, maxScore, at: Date.now() }] })),
+      completeExercise: (id) => setState((s) => ({ completedExercises: addUnique(s.completedExercises, id), completedLessons: addUnique(s.completedLessons, id) })),
     }),
     {
       name: 'inverter-lab-progress',

@@ -218,47 +218,7 @@ export interface InverterModel {
 }
 
 // ───────────── Circuits ─────────────
-
-export interface PlacedComponent {
-  instanceId: string
-  componentId: string
-  x: number
-  y: number
-  rotation: 0 | 90 | 180 | 270
-  /** Instance parameters, e.g. { resistance: 100 }. */
-  params: Record<string, number>
-}
-
-export interface Wire {
-  id: string
-  from: { instanceId: string; terminalId: string }
-  to: { instanceId: string; terminalId: string }
-}
-
-export interface Circuit {
-  id: string
-  name: string
-  components: PlacedComponent[]
-  wires: Wire[]
-}
-
-export type ConnectionIssueKind =
-  | 'short-circuit'
-  | 'reverse-polarity'
-  | 'shoot-through'
-  | 'open-circuit'
-  | 'floating-gate'
-  | 'missing-protection'
-  | 'missing-earth'
-
-export interface ConnectionIssue {
-  kind: ConnectionIssueKind
-  severity: 'info' | 'warning' | 'danger'
-  involved: string[]
-  /** Educational explanation of why the connection is wrong and what would happen. */
-  explanation: string
-  fix: string
-}
+// Circuit types live in src/engine/circuit/types.ts (Phase 4).
 
 // ───────────── Simulation ─────────────
 

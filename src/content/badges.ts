@@ -42,7 +42,6 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'bench-hand',
-    availableFromPhase: 4,
     title: 'Bench Hand',
     description: 'Complete three practical exercises.',
     earned: (p) => p.completedExercises.length >= 3,

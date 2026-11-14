@@ -13,7 +13,7 @@
 | Zustand | 5.1 (`persist` middleware for progress; plain store for the 3D lab) |
 | Persistence | IndexedDB via `idb-keyval`, with an in-memory fallback; every load is validated and merged (see §7) |
 | Routing | `react-router-dom` `HashRouter`, so deep links work on any static host |
-| Tests / lint | Vitest 5.1 (111 tests) / oxlint 1.9 (0 warnings) |
+| Tests / lint | Vitest 5.1 (162 tests) / oxlint 1.9 (0 warnings) |
 
 Scripts: `npm run dev`, `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`, `npm run preview`.
 
@@ -47,8 +47,10 @@ src/
     badges.ts          9 badges (pure predicates over progress)
   types/               domain.ts (components, 3D models, procedures, circuits, simulation, faults), modules.ts, progress.ts
   engine/waveform/     waveforms.ts, scale.ts (+ tests)
-  engine/simulation/ circuit/ solar/ faults/    (Phases 4, 5, 7, 9)
-  store/               progressStore.ts, selectors.ts, sanitize.ts (validate + merge), id.ts (+ tests)
+  engine/circuit/      types, parts (20-part catalogue), topology (union-find nodes), solve (MNA), roles,
+                       validate (fault rules), exercises (evaluators), edit (pure editing ops), build (+ tests)
+  engine/simulation/ solar/ faults/    (Phases 5, 7, 9)
+  store/               progressStore.ts, idbStorage.ts, selectors.ts, sanitize.ts (validate + merge), id.ts (+ tests)
   ui/                  primitives, Icon, ErrorBoundary, symbols/ (IEC schematic symbols for all 24 components)
   features/
     dashboard/         DashboardPage, WaveformBench, ScopeTrace
@@ -66,7 +68,9 @@ src/
       LibraryPage.tsx, ComponentDetailPage.tsx, ComparePage.tsx   (each React.lazy)
       components/      SpecTable, TestProcedureView, PinoutDiagram, shared (levels, explanation tabs, breadcrumb)
       logic/           search.ts (ranked search, filters, parts-in-models), geometry.ts, format.ts (+ tests)
-    circuit-lab/ build/ solar/ instruments/ repair/ assessments/   (Phases 4–10)
+    circuit-lab/       CircuitLabPage, Workspace (SVG editor), Toolbox, Inspect/Checks/Exercise panels, PartGlyph,
+                       circuitStore (saved circuits + undo), analysis.ts, format.ts (+ tests)
+    build/ solar/ instruments/ repair/ assessments/   (Phases 5–10)
 docs/ARCHITECTURE.md, docs/PHASE-2-PLAN.md, docs/PHASE-2-REPORT.md, docs/PHASE-3-REPORT.md
 ```
 
@@ -85,7 +89,8 @@ docs/ARCHITECTURE.md, docs/PHASE-2-PLAN.md, docs/PHASE-2-REPORT.md, docs/PHASE-3
 - **ModelPart**: component id, label, PCB designator, assembly, position/rotation, `explodeOffset`, `geometry: PartGeometry` (a discriminated union naming the procedural builder and its parameters), optional `mountedOn` (board) and `dependsOn` (order rules), and a `removalNote` explaining what holds it in place.
 - **ProcedureStage**: title, instruction, why-now explanation, optional action (`isolate`, `discharge`), part ids, reassembly tip, optional checkpoint question.
 - **ProgressData**: lessons, exercises, projects, identified and inspected components, assessments, diagnoses, simulation runs, module visits, `level` (`beginner` / `intermediate` / `advanced`) and `activities` (`ActivityRecord` with level, model and optional score).
-- **Circuit / Wire / ConnectionIssue**, **SimulationParams / Measurements**, **FaultScenario / DiagnosisAttempt**: defined for Phases 4, 5 and 9.
+- **Circuit types** (Phase 4) live in `src/engine/circuit/types.ts`: `PartDef` / `TerminalDef` / `ParamDef`, `PlacedPart`, `Wire` (terminal-to-terminal), `CircuitDoc`, `Topology` (nodes), `SimMode`, `Solution`, `MeasurementPoint`, `ValidationIssue`, `ExerciseResult`.
+- **SimulationParams / Measurements**, **FaultScenario / DiagnosisAttempt**: defined for Phases 5 and 9.
 
 ## 5. Simulation strategy
 
@@ -98,7 +103,7 @@ The simulator is educational, deterministic and physically grounded (quasi-stead
 | Operating point | R/RL load, transformer ratio, conduction + switching + magnetic losses, efficiency, I_dc. | Phase 5 |
 | Thermal | T_j = T_amb + P_loss·ΣR_θ; fan failure raises R_θsa. | Phase 5 |
 | Battery | Rint model, coulomb counting with Peukert correction, chemistry cut-offs. | Phase 5 |
-| Circuit lab | Netlist, validator (short, polarity, shoot-through, floating gate, missing fuse/earth), modified nodal analysis. | Phase 4 |
+| Circuit lab | Node graph (union-find), modified nodal analysis with piecewise-linear diodes/LEDs, gate-controlled MOSFET/IGBT with body diodes, current-limited supply, relays, ideal transformer (AC snapshots at ±peak). 19 fault rules over nodes and solved values. RC τ from Thevenin resistance. | Done (Phase 4) |
 | Solar | Single-diode PV model, P&O MPPT, PWM charging, priority dispatcher with transfer switching. | Phase 7 |
 | Faults | Scenario → parameter overrides; instruments read the faulted simulation. | Phase 9 |
 
@@ -149,31 +154,47 @@ Model assumptions are displayed beside each result in the UI.
 - **Progress.** Opening an entry counts as studying it (shared with the 3D panels). Lessons cmp-01 to cmp-05 complete from `content/lessonCriteria.ts`, and a global lesson sync in `AppShell` completes lessons on any page. New badge: Reference Reader.
 - **Bundles.** Library pages are lazy (2.6–4.3 kB gzip each, plus a shared 31 kB gzip component-database chunk also used by the 3D lab). The dashboard bundle stays at 103.5 kB gzip.
 
-## 8. Persistence and robustness
+## 8. Circuit Connection Laboratory (Phase 4)
+
+**Documents.** A circuit is `CircuitDoc { parts, wires }`. Parts sit on a 20 px grid with 90° rotations; each part type defines its terminals in local grid coordinates (`PART_DEFS`), so terminal positions, hit-testing and pin labels all come from one table. A wire joins two terminals; there are no free-floating wire ends, so the netlist is exact.
+
+**Pipeline (on every edit).** `buildTopology` merges wired terminals into nodes (union-find) and picks the reference (ground part, else the source negative) → `solveCircuit` builds and solves the MNA system for each mode from `defaultModes` (DC, or the AC source at its positive and negative peaks), iterating piecewise-linear devices to a consistent state → `validateTopology` + `validateSolution` produce `ValidationIssue`s with explanation, fix and the parts involved. Nothing counts wires: every rule reads node membership, part roles or solved currents and voltages.
+
+**Roles.** `roles.ts` finds what a switch is doing from the graph: its gate driver (directly or through one gate resistor), the DC bus (through the fuse, closed switches and breaker poles), high-side / low-side position and half-bridge legs. Exercises use these to put the circuit into test states (for example the two diagonal H-bridge states) and to check gate references.
+
+**Exercises.** `content/circuitExercises.ts` holds ten exercises (objectives, steps, expected connections, assessment, toolbox, starter and a worked solution). `engine/circuit/exercises.ts` evaluates each one with weighted criteria computed from solves in the required states; a danger-level issue in the as-built circuit or a required test state blocks a pass. Worked solutions are tested to pass and to be warning-free; faulty variants are tested to fail with the expected issue. Passing marks the exercise and its lesson complete (ckt-09 also records practical assessment asm-03); passing with the worked solution loaded earns no credit until the circuit is reset.
+
+**Editor.** One SVG with pointer events (mouse, pen, touch): drag-and-drop or tap-to-place from the toolbox, drag or tap-tap terminal wiring, wire end handles for reconnection, drag to move, rotate, delete, undo (60 steps), wheel and pinch zoom, pan, keyboard shortcuts. Circuits are saved per exercise in IndexedDB (`inverter-lab-circuits`, sanitised on load) and can be exported and imported as JSON. `window.__circuitLab` is a test hook used by the browser regression script.
+
+**Bundle.** The page is lazy-loaded: 38 kB gzip; the dashboard bundle stays at 103.6 kB gzip.
+
+## 9. Persistence and robustness
 
 - Progress is a single `ProgressData` record (schema v1) in IndexedDB under `inverter-lab-progress`, kept in memory if storage is unavailable.
 - `sanitizeProgress` validates every field on rehydration and on backup import, and upgrades older records (fields added in Phase 2 get defaults).
 - `mergeProgress` combines stored data with anything recorded while IndexedDB was still loading (union of lists, latest visit times), so early actions are not lost.
 - `newId` works in non-secure contexts (plain HTTP on a LAN IP).
 - Without WebGL, the 3D lab shows a clear notice; the parts list, information panels and procedures still work.
+- Saved circuits pass through `sanitizeDoc` (unknown parts, missing terminals, duplicate ids, non-finite or out-of-range values are dropped or clamped), so a damaged save cannot break the editor.
 
-## 9. Safety design
+## 10. Safety design
 
 - A permanent "Simulation environment" indicator; safety notices on every module.
 - Guided disassembly enforces isolation and a verified discharge before any internal part can be touched, and explains every refused step.
 - Unsafe methods (screwdriver discharge) are refused with the reason, never simulated as valid.
 - Real-world caveats are stated where the model simplifies (dielectric absorption, bleeder failure, datasheet pin orders).
 - Every test procedure begins with isolation (or is explicitly a qualified live measurement), and DC-bus parts require a verified discharge (enforced by tests).
+- Circuit lab: practical exercises start with isolated, current-limited, low-voltage sources. Anything above 50 V DC or 25 V AC (source settings or solved node voltages) raises a hazardous-voltage warning and a "Simulated only" banner; battery short circuits, shoot-through, reverse-polarity electrolytics and over-rated parts are danger-level and block an exercise pass.
 
-## 10. Roadmap
+## 11. Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Foundation, navigation, dashboard, design system, progress persistence, waveform engine core | **Done, audited** |
 | 2 | 3D inverter dissection laboratory: two models, 24 recognisable part types, 13-field panels, explode/hide/isolate, connection points, guided disassembly/reassembly, discharge simulation, identification challenge and asm-01, learner levels | **Done** (see PHASE-2-REPORT.md) |
 | 3 | Searchable component library: catalogue, technical pages, pinouts, provenance-labelled specifications, virtual-instrument test procedures, comparisons, 3D links | **Done** (see PHASE-3-REPORT.md) |
-| 4 | Circuit connection laboratory | Next |
-| 5 | Simulation engine (operating point, thermal, battery), Fundamentals lessons | |
+| 4 | Circuit connection laboratory: schematic editor, 20 part types, connection graph, MNA solver, fault explanations, ten assessed exercises, saving | **Done** (see PHASE-4-REPORT.md) |
+| 5 | Simulation engine (operating point, thermal, battery), Fundamentals lessons | Next |
 | 6 | Build Your Own Inverter (eight projects) | |
 | 7 | Solar and hybrid lab | |
 | 8 | Virtual instruments bound to the simulation | |
@@ -182,13 +203,14 @@ Model assumptions are displayed beside each result in the UI.
 
 Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warnings) and `npm run build` pass; every route and control is smoke-tested in a browser (desktop, tablet, 390 px phone, plain-HTTP LAN access) with no console errors from app code; 3D rendering is checked with headless Chromium (SwiftShader WebGL 2); earlier phases are re-checked.
 
-## 11. Known limitations after Phase 3
+## 12. Known limitations after Phase 4
 
-- Eight sections still show only their syllabus; their workspaces arrive in the phases above.
-- Three of the ten badges and the exercise, project and troubleshooting counters depend on later phases (labelled in the UI).
+- Seven sections still show only their syllabus; their workspaces arrive in the phases above.
+- Two of the ten badges and the project and troubleshooting counters depend on later phases (labelled in the UI).
 - 3D parts are educational representations built from primitives: proportions and pinouts follow real packages, but surface detail is simplified.
 - In the guided procedure, soldered parts are "removed" individually for inspection; in a real repair, boards are usually replaced as a unit (stated in the instructions).
 - Discharge pulse capacity uses a simplified rated W × 5 s rule; the waveform bench still models an ideal bridge until Phase 5.
 - Test-procedure readings are representative teaching values; interactive instruments connected to the simulation arrive in Phase 8.
+- Circuit lab: DC and quasi-static AC only. Capacitors are open at DC and inductors are their winding resistance; switching transients, ripple waveforms, dead time, magnetic saturation and thermal effects are not simulated. RC curves are exponential responses calculated from the measured τ; filter ripple is the labelled approximation ΔV ≈ I/(2fC). Semiconductors are piecewise-linear. Wires are drawn with a simple orthogonal route and may cross parts.
 - "Studied" means an entry or 3D panel was opened; reading depth is not measured.
-- Progress is stored per browser; backup/restore moves it between devices.
+- Progress and saved circuits are stored per browser; backup/restore and circuit export move them between devices.
