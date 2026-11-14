@@ -37,8 +37,9 @@ export function DashboardPage() {
 
   const s = summarise(data)
   const pct = (v: number | null) => (v === null ? '—' : `${v.toFixed(0)}%`)
-  // Next step: first module in pathway order whose lessons are not all complete.
-  const next = PATHWAY.find((m) => moduleCompletion(data, m.lessons.map((l) => l.id)) < 1) ?? PATHWAY[PATHWAY.length - 1]
+  // Next step: first live module with unfinished lessons, else the first unfinished module.
+  const incomplete = (m: (typeof PATHWAY)[number]) => moduleCompletion(data, m.lessons.map((l) => l.id)) < 1
+  const next = PATHWAY.find((m) => m.status === 'live' && incomplete(m)) ?? PATHWAY.find(incomplete) ?? PATHWAY[PATHWAY.length - 1]
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-6 lg:px-6">
@@ -68,7 +69,7 @@ export function DashboardPage() {
         <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="Build workshop · from Phase 6" frac={s.projects.done / s.projects.total} />
         <StatTile label="Assessment average" value={pct(s.assessments.averagePct)} detail={s.assessments.taken ? `${s.assessments.taken} of ${s.assessments.total} attempted` : 'Assessments · from Phase 10'} />
         <StatTile label="Troubleshooting success" value={pct(s.troubleshooting.ratePct)} detail={s.troubleshooting.attempts ? `${s.troubleshooting.correct} correct of ${s.troubleshooting.attempts}` : 'Repair workshop · from Phase 9'} />
-        <StatTile label="Components identified" value={`${s.components.done}/${s.components.total}`} detail="3D Lab · from Phase 2" frac={s.components.done / s.components.total} />
+        <StatTile label="Components identified" value={`${s.components.done}/${s.components.total}`} detail={`${s.studied.done} studied in the 3D Lab`} frac={s.components.done / s.components.total} />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

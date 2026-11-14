@@ -54,7 +54,10 @@ export function ProgressPage() {
     ['Lessons completed', `${s.lessons.done} / ${s.lessons.total}`],
     ['Practical exercises', `${s.exercises.done} / ${s.exercises.total}`],
     ['Engineering projects', `${s.projects.done} / ${s.projects.total}`],
+    ['Learning level', data.level.charAt(0).toUpperCase() + data.level.slice(1)],
+    ['Components studied (information panels)', `${s.studied.done} / ${s.studied.total}`],
     ['Components identified', `${s.components.done} / ${s.components.total}`],
+    ['Practical activities completed', String(s.activities)],
     ['Assessments attempted', `${s.assessments.taken} / ${s.assessments.total}`],
     ['Assessment average (best attempts)', s.assessments.averagePct === null ? '—' : `${s.assessments.averagePct.toFixed(1)} %`],
     ['Diagnoses submitted', String(s.troubleshooting.attempts)],
@@ -105,6 +108,25 @@ export function ProgressPage() {
               )
             })}
           </ul>
+        </Panel>
+
+        <Panel title="Practical activity log">
+          {data.activities.length ? (
+            <ul className="divide-y divide-chassis-700">
+              {data.activities.slice(0, 25).map((a) => (
+                <li key={`${a.activityId}-${a.at}`} className="flex flex-wrap items-baseline justify-between gap-x-3 py-2 text-sm">
+                  <span className="min-w-0 text-ink-100">{a.label}</span>
+                  <span className="readout text-xs whitespace-nowrap text-ink-400">
+                    {a.maxScore ? `${a.score}/${a.maxScore} · ` : ''}
+                    {a.level}
+                  </span>
+                  <span className="w-full text-xs text-ink-500">{new Date(a.at).toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-ink-500">No practical activities yet. The 3D Inverter Laboratory records discharges, disassemblies, reassemblies and identification challenges here.</p>
+          )}
         </Panel>
 
         <Panel title="Simulation history" action={data.simulationRuns.length > 0 && <Button variant="ghost" onClick={clearSimulationHistory}>Clear history</Button>}>

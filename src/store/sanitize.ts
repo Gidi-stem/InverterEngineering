@@ -28,10 +28,43 @@ export function sanitizeProgress(raw: unknown, fallbackCreatedAt = Date.now()): 
     diagnoses: objects(o.diagnoses, (d) => typeof d.scenarioId === 'string' && typeof d.correct === 'boolean' && num(d.at)),
     simulationRuns: objects(o.simulationRuns, (r) => typeof r.id === 'string' && num(r.at) && typeof r.label === 'string' && !!r.params && typeof r.params === 'object' && !!r.results && typeof r.results === 'object'),
     moduleVisits: visits,
+    level: o.level === 'intermediate' || o.level === 'advanced' ? o.level : 'beginner',
+    inspectedComponents: strings(o.inspectedComponents),
+    activities: objects(o.activities, (a) => typeof a.activityId === 'string' && num(a.at) && typeof a.label === 'string'),
   }
 }
 
 /** Identifies a backup file: must declare schema v1 and be an object. */
 export function looksLikeBackup(raw: unknown): boolean {
   return !!raw && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>).schemaVersion === 1
+}
+
+/**
+ * Merge stored progress with anything recorded in this session before storage finished loading
+ * (IndexedDB hydrates asynchronously, so an early page visit must not be overwritten).
+ */
+export function mergeProgress(stored: ProgressData, early: ProgressData): ProgressData {
+  const union = (a: string[], b: string[]) => [...new Set([...a, ...b])]
+  const byKey = <T,>(a: T[], b: T[], key: (x: T) => string) => {
+    const seen = new Set(a.map(key))
+    return [...a, ...b.filter((x) => !seen.has(key(x)))]
+  }
+  const visits = { ...stored.moduleVisits }
+  for (const [k, v] of Object.entries(early.moduleVisits)) {
+    const key = k as keyof typeof visits
+    visits[key] = Math.max(visits[key] ?? 0, v ?? 0)
+  }
+  return {
+    ...stored,
+    completedLessons: union(stored.completedLessons, early.completedLessons),
+    completedExercises: union(stored.completedExercises, early.completedExercises),
+    completedProjects: union(stored.completedProjects, early.completedProjects),
+    identifiedComponents: union(stored.identifiedComponents, early.identifiedComponents),
+    inspectedComponents: union(stored.inspectedComponents, early.inspectedComponents),
+    assessments: byKey(stored.assessments, early.assessments, (a) => `${a.assessmentId}|${a.at}`),
+    diagnoses: byKey(stored.diagnoses, early.diagnoses, (d) => `${d.scenarioId}|${d.at}`),
+    simulationRuns: byKey(early.simulationRuns, stored.simulationRuns, (r) => r.id),
+    activities: byKey(early.activities, stored.activities, (a) => `${a.activityId}|${a.at}`),
+    moduleVisits: visits,
+  }
 }

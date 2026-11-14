@@ -17,10 +17,12 @@ describe('progress summary', () => {
       { scenarioId: 'b', at: 0, sectionGuess: 'control', partGuess: 'u1', correct: false, usedHints: 1, testsPerformed: 1 },
     ]
     p.assessments = [
-      { assessmentId: 'x', at: 0, score: 5, maxScore: 10 },
-      { assessmentId: 'x', at: 1, score: 9, maxScore: 10 },
+      { assessmentId: 'asm-01', at: 0, score: 5, maxScore: 10 },
+      { assessmentId: 'asm-01', at: 1, score: 9, maxScore: 10 },
     ]
+    p.assessments.push({ assessmentId: 'not-a-syllabus-assessment', at: 2, score: 0, maxScore: 10 })
     const s = summarise(p)
+    expect(s.assessments.taken).toBe(1)
     expect(s.troubleshooting.ratePct).toBe(50)
     expect(s.assessments.averagePct).toBeCloseTo(90)
     expect(s.overallPct).toBeGreaterThan(0)

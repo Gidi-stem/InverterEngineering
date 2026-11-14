@@ -24,10 +24,15 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'component-spotter',
-    availableFromPhase: 2,
     title: 'Component Spotter',
     description: 'Identify 10 inverter components.',
     earned: (p) => p.identifiedComponents.length >= 10,
+  },
+  {
+    id: 'safe-hands',
+    title: 'Safe Hands',
+    description: 'Discharge and verify a capacitor bank, then complete a guided disassembly.',
+    earned: (p) => ['lab3d:discharge', 'lab3d:disassembly'].every((id) => p.activities.some((a) => a.activityId === id)),
   },
   {
     id: 'bench-hand',

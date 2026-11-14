@@ -1,6 +1,6 @@
 # Phase 2 Plan: Interactive 3D Inverter Dissection Laboratory
 
-Status: **planned, not started.** Phase 1 audit is complete (see the audit commit on `main`).
+Status: **complete.** See PHASE-2-REPORT.md for what was delivered and how it was verified.
 
 ## 1. Goal
 

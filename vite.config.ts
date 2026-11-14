@@ -6,5 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
+  // The lazily loaded 3D lab chunk (Three.js + R3F + drei) is ~1.25 MB raw / ~345 kB gzip by design.
+  build: { chunkSizeWarningLimit: 1400 },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 })

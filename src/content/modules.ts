@@ -57,7 +57,7 @@ export const MODULES: LearningModule[] = [
     icon: 'cube',
     level: 'foundation',
     phase: 2,
-    status: 'planned',
+    status: 'live',
     summary:
       'Rotate, zoom and dismantle a full inverter in 3D. Explode the assembly, isolate boards and click any part for its engineering data.',
     objectives: [

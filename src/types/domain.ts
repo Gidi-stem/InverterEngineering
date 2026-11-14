@@ -47,25 +47,66 @@ export interface ElectronicComponent {
   replacementNotes: string[]
   safety: string[]
   related: string[]
-  typicalSpecs?: ComponentSpec[]
+  typicalSpecs: ComponentSpec[]
+  /** Plain-language explanation for beginners. */
+  plainSummary: string
+  /** Design-level note for advanced learners (selection, derating, layout). */
+  advancedNote: string
 }
 
 // ───────────── 3D inverter models ─────────────
 
 export type Vec3 = [number, number, number]
 
+/** Geometry recipe for a part. `factory` selects the procedural 3D builder; the rest are its parameters. */
+export type PartGeometry =
+  | { factory: 'to247'; kind: 'mosfet' | 'igbt'; marking: string }
+  | { factory: 'electrolytic'; diameter: number; height: number; rating: string }
+  | { factory: 'film-cap'; size: Vec3; rating: string }
+  | { factory: 'axial-diode'; marking: string }
+  | { factory: 'axial-resistor'; ohms: number; tolerancePct: 1 | 2 | 5 | 10; watts: number }
+  | { factory: 'ei-transformer'; size: Vec3; rating: string }
+  | { factory: 'toroid'; outerDiameter: number; height: number; turns: number; rating: string }
+  | { factory: 'ic'; pkg: 'soic8' | 'dip16' | 'lqfp64'; marking: string }
+  | { factory: 'relay'; marking: string }
+  | { factory: 'heatsink'; length: number; height: number; finDepth: number; fins: number }
+  | { factory: 'fan'; size: number; depth: number; rating: string }
+  | { factory: 'mega-fuse'; amps: number }
+  | { factory: 'din-breaker'; rating: string }
+  | { factory: 'hall-sensor'; marking: string }
+  | { factory: 'voltage-sensor'; marking: string }
+  | { factory: 'pcb'; size: [number, number]; color: 'green' | 'blue'; silk: { at: [number, number]; text: string }[] }
+  | { factory: 'battery-terminal'; polarity: '+' | '-' }
+  | { factory: 'dc-lugs' }
+  | { factory: 'ac-terminal-block' }
+  | { factory: 'mc4'; polarity: '+' | '-' }
+  | { factory: 'display-board'; lines: string[] }
+  | { factory: 'pe-stud' }
+  | { factory: 'enclosure-base'; size: Vec3; displayWindow: boolean }
+  | { factory: 'enclosure-cover'; size: Vec3; nameplate: string[] }
+
+export type Assembly = 'chassis' | 'terminal-block' | 'power-board' | 'magnetics' | 'control-board' | 'cooling' | 'display-board'
+
 export interface ModelPart {
   /** Unique within the model; also the selection id. */
   id: string
   componentId: string
   label: string
+  /** PCB reference designator printed in the silkscreen, e.g. "Q1". */
+  designator?: string
+  assembly: Assembly
   position: Vec3
+  /** Euler rotation in radians. */
   rotation?: Vec3
-  /** Offset applied in exploded view. */
+  /** Offset applied at full exploded view. */
   explodeOffset: Vec3
-  /** Board or assembly this part belongs to. */
-  assembly: 'chassis' | 'power-board' | 'control-board' | 'display-board' | 'terminal-block' | 'cooling'
-  connectionPoints?: { terminalId: string; position: Vec3 }[]
+  geometry: PartGeometry
+  /** Board this part is soldered/fixed to: it moves with the board and the board cannot be removed before it. */
+  mountedOn?: string
+  /** Parts that must be removed before this one (order rules within a stage). */
+  dependsOn?: string[]
+  /** What physically holds the part in place; shown when a removal is attempted out of order. */
+  removalNote: string
 }
 
 export type InverterTopology =
@@ -78,15 +119,56 @@ export type InverterTopology =
   | 'solar'
   | 'hybrid'
 
+export interface CheckpointQuestion {
+  prompt: string
+  options: string[]
+  correct: number
+  explanation: string
+}
+
+/** One stage of the guided disassembly. Reassembly replays stages in reverse. */
+export interface ProcedureStage {
+  id: string
+  title: string
+  /** What to do in this stage. */
+  instruction: string
+  /** Why this stage comes at this point in the sequence. */
+  why: string
+  /** A required action before any parts in this stage can be removed. */
+  action?: 'isolate' | 'discharge' | 'verify-dead'
+  partIds: string[]
+  /** Tip shown when this stage is replayed during reassembly. */
+  reassemblyTip: string
+  /** Asked at intermediate and advanced levels when the stage is completed. */
+  checkpoint?: CheckpointQuestion
+}
+
+export interface CapacitorBank {
+  label: string
+  partIds: string[]
+  /** Total bank capacitance (F). */
+  capacitanceF: number
+  /** Voltage on the bank when the inverter is isolated (V). */
+  initialV: number
+  /** Built-in bleeder resistance across the bank (Ω). */
+  bleederOhms: number
+}
+
 export interface InverterModel {
   id: string
   name: string
+  summary: string
   topology: InverterTopology
   ratedPowerW: number
-  dcBusV: number
+  batteryV: number
   outputVrms: number
   outputHz: 50 | 60
+  /** Overall enclosure size in model units (1 unit = 10 mm). */
+  size: Vec3
+  assemblies: { id: Assembly; label: string }[]
   parts: ModelPart[]
+  procedure: ProcedureStage[]
+  dischargeBank: CapacitorBank
 }
 
 // ───────────── Circuits ─────────────

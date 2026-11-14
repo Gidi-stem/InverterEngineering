@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { niceStep } from '../engine/waveform/scale'
 import { newId } from './id'
 import { emptyProgress } from './progressStore'
-import { looksLikeBackup, sanitizeProgress } from './sanitize'
+import { looksLikeBackup, mergeProgress, sanitizeProgress } from './sanitize'
 import { summarise } from './selectors'
 
 describe('sanitizeProgress (audit fix: corrupted backups and storage)', () => {
@@ -57,5 +57,21 @@ describe('niceStep', () => {
     expect([0.7, 1, 1.1, 2.5, 5, 93, 0.0042].map(niceStep)).toEqual([1, 1, 2, 5, 5, 100, 0.005])
     expect(niceStep(0)).toBe(1)
     expect(niceStep(Number.NaN)).toBe(1)
+  })
+})
+
+describe('mergeProgress (audit fix: actions before IndexedDB hydration)', () => {
+  it('keeps an early page visit and stored history together', () => {
+    const stored = emptyProgress()
+    stored.moduleVisits = { lab3d: 100 }
+    stored.completedLessons = ['l3d-01']
+    stored.activities = [{ activityId: 'lab3d:discharge', at: 5, label: 'x', level: 'beginner' }]
+    const early = emptyProgress()
+    early.moduleVisits = { progress: 200, lab3d: 50 }
+    early.completedLessons = ['l3d-02']
+    const m = mergeProgress(stored, early)
+    expect(m.moduleVisits).toEqual({ lab3d: 100, progress: 200 })
+    expect(m.completedLessons.sort()).toEqual(['l3d-01', 'l3d-02'])
+    expect(m.activities).toHaveLength(1)
   })
 })

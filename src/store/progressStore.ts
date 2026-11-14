@@ -3,9 +3,9 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import { del, get, set } from 'idb-keyval'
 import type { SimulationRun } from '../types/domain'
 import type { ModuleId } from '../types/modules'
-import type { ProgressData } from '../types/progress'
+import type { ActivityRecord, LearnerLevel, ProgressData } from '../types/progress'
 import { newId } from './id'
-import { looksLikeBackup, sanitizeProgress } from './sanitize'
+import { looksLikeBackup, mergeProgress, sanitizeProgress } from './sanitize'
 
 /** IndexedDB-backed storage with in-memory fallback (private mode / sandboxed frames). */
 const memory = new Map<string, string>()
@@ -46,6 +46,9 @@ export const emptyProgress = (): ProgressData => ({
   diagnoses: [],
   simulationRuns: [],
   moduleVisits: {},
+  level: 'beginner',
+  inspectedComponents: [],
+  activities: [],
 })
 
 interface ProgressActions {
@@ -55,7 +58,30 @@ interface ProgressActions {
   clearSimulationHistory: () => void
   resetProgress: () => void
   importProgress: (data: unknown) => { ok: true } | { ok: false; error: string }
+  setLevel: (level: LearnerLevel) => void
+  inspectComponent: (componentId: string) => void
+  identifyComponent: (componentId: string) => void
+  completeLesson: (lessonId: string) => void
+  recordActivity: (a: Omit<ActivityRecord, 'at'>) => void
+  recordAssessment: (assessmentId: string, score: number, maxScore: number) => void
 }
+
+const ACTION_KEYS = [
+  'hydrated',
+  'visitModule',
+  'recordSimulationRun',
+  'clearSimulationHistory',
+  'resetProgress',
+  'importProgress',
+  'setLevel',
+  'inspectComponent',
+  'identifyComponent',
+  'completeLesson',
+  'recordActivity',
+  'recordAssessment',
+] as const
+
+const addUnique = (list: string[], id: string) => (list.includes(id) ? list : [...list, id])
 
 export type ProgressState = ProgressData & ProgressActions
 
@@ -78,14 +104,21 @@ export const useProgress = create<ProgressState>()(
         setState(sanitizeProgress(data))
         return { ok: true }
       },
+      setLevel: (level) => setState({ level }),
+      inspectComponent: (id) => setState((s) => ({ inspectedComponents: addUnique(s.inspectedComponents, id) })),
+      identifyComponent: (id) => setState((s) => ({ identifiedComponents: addUnique(s.identifiedComponents, id) })),
+      completeLesson: (id) => setState((s) => ({ completedLessons: addUnique(s.completedLessons, id) })),
+      recordActivity: (a) => setState((s) => ({ activities: [{ ...a, at: Date.now() }, ...s.activities].slice(0, 300) })),
+      recordAssessment: (assessmentId, score, maxScore) =>
+        setState((s) => ({ assessments: [...s.assessments, { assessmentId, score, maxScore, at: Date.now() }] })),
     }),
     {
       name: 'inverter-lab-progress',
       version: 1,
       storage: createJSONStorage(() => idbStorage),
-      partialize: ({ hydrated: _h, visitModule: _a, recordSimulationRun: _b, clearSimulationHistory: _c, resetProgress: _d, importProgress: _e, ...data }) => data,
-      // Validate whatever is in IndexedDB before it reaches the UI.
-      merge: (persisted, current) => ({ ...current, ...sanitizeProgress(persisted, current.createdAt) }),
+      partialize: (s) => snapshot(s),
+      // Validate whatever is in IndexedDB before it reaches the UI, keeping anything recorded while it loaded.
+      merge: (persisted, current) => ({ ...current, ...mergeProgress(sanitizeProgress(persisted, current.createdAt), snapshot(current)) }),
       onRehydrateStorage: () => () => useProgress.setState({ hydrated: true }),
     },
   ),
@@ -93,6 +126,7 @@ export const useProgress = create<ProgressState>()(
 
 /** Extract the plain serialisable progress record from state. */
 export function snapshot(s: ProgressState): ProgressData {
-  const { hydrated: _h, visitModule: _a, recordSimulationRun: _b, clearSimulationHistory: _c, resetProgress: _d, importProgress: _e, ...data } = s
-  return data
+  const data: Record<string, unknown> = { ...s }
+  for (const k of ACTION_KEYS) delete data[k]
+  return data as unknown as ProgressData
 }
