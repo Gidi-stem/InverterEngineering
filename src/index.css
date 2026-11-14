@@ -1,0 +1,90 @@
+/*
+  VOICE   precise, calm, laboratory instrument
+  IDEA    a bench instrument rack: dark chassis, engraved labels, live readouts
+  PICTURE live waveform scope trace on the dashboard; 3D bench from Phase 2
+  COLOUR  charcoal-navy chassis, cobalt signal, green = live, amber = caution, red = danger
+  TYPE    IBM Plex Sans for text, JetBrains Mono for numeric readouts only
+*/
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-600.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-chassis-950: #070a14;
+  --color-chassis-900: #0b1020;
+  --color-chassis-850: #0f1528;
+  --color-chassis-800: #141b31;
+  --color-chassis-700: #1d2742;
+  --color-chassis-600: #2a3656;
+  --color-chassis-500: #44517a;
+  --color-ink-100: #e8ecf6;
+  --color-ink-300: #b4bdd4;
+  --color-ink-400: #8a94b0;
+  --color-ink-500: #67718e;
+
+  --color-signal-300: #9bb5ff;
+  --color-signal-400: #6d93ff;
+  --color-signal-500: #4f7dff;
+  --color-signal-600: #2f5ff0;
+  --color-live-400: #3ddc97;
+  --color-caution-400: #ffb84d;
+  --color-danger-400: #ff6b6b;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-chassis-900 text-ink-100 font-sans antialiased;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-signal-400);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-signal-500) 45%, transparent);
+  }
+}
+
+@layer components {
+  /* Engineering grid: minor 16px, major 80px */
+  .bg-lab-grid {
+    background-color: var(--color-chassis-900);
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(to right, rgb(255 255 255 / 0.018) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  }
+  .panel {
+    @apply rounded-lg border border-chassis-700 bg-chassis-850/90 backdrop-blur-sm;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+  .readout {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+  .range {
+    @apply w-full accent-signal-500 h-2 cursor-pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
