@@ -4,6 +4,8 @@ import { del, get, set } from 'idb-keyval'
 import type { SimulationRun } from '../types/domain'
 import type { ModuleId } from '../types/modules'
 import type { ProgressData } from '../types/progress'
+import { newId } from './id'
+import { looksLikeBackup, sanitizeProgress } from './sanitize'
 
 /** IndexedDB-backed storage with in-memory fallback (private mode / sandboxed frames). */
 const memory = new Map<string, string>()
@@ -59,13 +61,6 @@ export type ProgressState = ProgressData & ProgressActions
 
 const MAX_RUNS = 200
 
-function isProgress(x: unknown): x is ProgressData {
-  if (!x || typeof x !== 'object') return false
-  const o = x as Record<string, unknown>
-  const arrays = ['completedLessons', 'completedExercises', 'completedProjects', 'identifiedComponents', 'assessments', 'diagnoses', 'simulationRuns']
-  return o.schemaVersion === 1 && arrays.every((k) => Array.isArray(o[k])) && typeof o.moduleVisits === 'object'
-}
-
 export const useProgress = create<ProgressState>()(
   persist(
     (setState) => ({
@@ -74,13 +69,13 @@ export const useProgress = create<ProgressState>()(
       visitModule: (id) => setState((s) => ({ moduleVisits: { ...s.moduleVisits, [id]: Date.now() } })),
       recordSimulationRun: (run) =>
         setState((s) => ({
-          simulationRuns: [{ ...run, id: crypto.randomUUID(), at: Date.now() }, ...s.simulationRuns].slice(0, MAX_RUNS),
+          simulationRuns: [{ ...run, id: newId(), at: Date.now() }, ...s.simulationRuns].slice(0, MAX_RUNS),
         })),
       clearSimulationHistory: () => setState({ simulationRuns: [] }),
       resetProgress: () => setState(emptyProgress()),
       importProgress: (data) => {
-        if (!isProgress(data)) return { ok: false, error: 'This file is not an Inverter Lab progress backup (schema v1).' }
-        setState({ ...emptyProgress(), ...data })
+        if (!looksLikeBackup(data)) return { ok: false, error: 'This file is not an Inverter Lab progress backup (schema v1).' }
+        setState(sanitizeProgress(data))
         return { ok: true }
       },
     }),
@@ -89,6 +84,8 @@ export const useProgress = create<ProgressState>()(
       version: 1,
       storage: createJSONStorage(() => idbStorage),
       partialize: ({ hydrated: _h, visitModule: _a, recordSimulationRun: _b, clearSimulationHistory: _c, resetProgress: _d, importProgress: _e, ...data }) => data,
+      // Validate whatever is in IndexedDB before it reaches the UI.
+      merge: (persisted, current) => ({ ...current, ...sanitizeProgress(persisted, current.createdAt) }),
       onRehydrateStorage: () => () => useProgress.setState({ hydrated: true }),
     },
   ),

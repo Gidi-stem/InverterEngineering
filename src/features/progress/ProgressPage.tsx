@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { BADGES } from '../../content/badges'
-import { PATHWAY } from '../../content/modules'
+import { MODULES, PATHWAY } from '../../content/modules'
 import { snapshot, useProgress } from '../../store/progressStore'
 import { moduleCompletion, summarise } from '../../store/selectors'
 import { Button, Meter, Panel } from '../../ui/primitives'
@@ -61,7 +61,7 @@ export function ProgressPage() {
     ['Troubleshooting success rate', s.troubleshooting.ratePct === null ? '—' : `${s.troubleshooting.ratePct.toFixed(1)} %`],
     ['Simulation runs logged', String(s.simulations)],
     ['Badges earned', `${s.badges.earned} / ${s.badges.total}`],
-    ['Sections opened', `${Object.keys(data.moduleVisits).length} / 12`],
+    ['Sections opened', `${Object.keys(data.moduleVisits).length} / ${MODULES.length}`],
   ]
 
   return (
@@ -117,7 +117,7 @@ export function ProgressPage() {
               {BADGES.map((b) => (
                 <li key={b.id} className="flex justify-between gap-3">
                   <span className={b.earned(data) ? 'text-live-400' : 'text-ink-400'}>{b.title}</span>
-                  <span className="text-xs text-ink-500">{b.earned(data) ? 'Earned' : b.description}</span>
+                  <span className="text-right text-xs text-ink-500">{b.earned(data) ? 'Earned' : b.availableFromPhase ? `${b.description} (Phase ${b.availableFromPhase})` : b.description}</span>
                 </li>
               ))}
             </ul>

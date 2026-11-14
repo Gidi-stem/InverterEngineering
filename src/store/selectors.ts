@@ -5,6 +5,8 @@ import type { ProgressData } from '../types/progress'
 
 const EXERCISE_TOTAL = PATHWAY.find((m) => m.id === 'circuit-lab')!.lessons.length
 const PROJECT_TOTAL = PATHWAY.find((m) => m.id === 'build')!.lessons.length
+/** Fault scenarios specified for the Repair workshop (Phase 9 replaces this with the scenario list length). */
+export const FAULT_SCENARIO_TOTAL = 17
 const ASSESSMENT_TOTAL = PATHWAY.find((m) => m.id === 'assessments')!.lessons.length
 
 export interface ProgressSummary {
@@ -42,7 +44,7 @@ export function summarise(p: ProgressData): ProgressSummary {
     0.15 * frac(p.completedProjects.length, PROJECT_TOTAL) +
     0.1 * frac(p.identifiedComponents.length, COMPONENT_INDEX.length) +
     0.15 * (assessPcts.reduce((s, x) => s + x, 0) / ASSESSMENT_TOTAL) +
-    0.1 * frac(solvedScenarios, 17)
+    0.1 * frac(solvedScenarios, FAULT_SCENARIO_TOTAL)
 
   return {
     lessons: { done: lessonsDone, total: ALL_LESSON_IDS.length },

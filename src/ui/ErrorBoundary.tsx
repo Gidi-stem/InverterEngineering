@@ -4,8 +4,8 @@ interface State {
   error: Error | null
 }
 
-/** Contains a failure to one laboratory section so navigation keeps working. */
-export class ErrorBoundary extends Component<{ children: ReactNode; resetKey: string }, State> {
+/** Contains a failure to one laboratory section so navigation keeps working. Give it a `key` per route to reset. */
+export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { error: null }
 
   static getDerivedStateFromError(error: Error): State {
@@ -14,10 +14,6 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey: st
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Section failed to render', error, info.componentStack)
-  }
-
-  componentDidUpdate(prev: { resetKey: string }) {
-    if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null })
   }
 
   render() {

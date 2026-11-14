@@ -33,6 +33,12 @@ describe('waveform engine validated against closed-form theory', () => {
     expect(rel(a.harmonics[0], 0.8 * 100)).toBeLessThan(0.01)
   })
 
+  it('unipolar SPWM (unfiltered): Vrms = Vdc·√(2m/π), THD ≈ 52.3 % at m = 1', () => {
+    const a = analyse(sampleWaveform('pwm', { ...P, modulationIndex: 1, carrierHz: 2000 }, 20000))
+    expect(rel(a.rms, 100 * Math.sqrt(2 / Math.PI))).toBeLessThan(0.01)
+    expect(a.thd).toBeCloseTo(Math.sqrt(4 / Math.PI - 1), 1)
+  })
+
   it('full-wave rectified: average = 2Vpk/π, no fundamental at the line frequency', () => {
     const a = analyse(sampleWaveform('rectified', P))
     expect(rel(a.average, theory.rectifiedAverage(100))).toBeLessThan(1e-5)

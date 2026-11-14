@@ -38,7 +38,7 @@ export function DashboardPage() {
   const s = summarise(data)
   const pct = (v: number | null) => (v === null ? '—' : `${v.toFixed(0)}%`)
   // Next step: first module in pathway order whose lessons are not all complete.
-  const next = PATHWAY.find((m) => moduleCompletion(data, m.lessons.map((l) => l.id)) < 1)!
+  const next = PATHWAY.find((m) => moduleCompletion(data, m.lessons.map((l) => l.id)) < 1) ?? PATHWAY[PATHWAY.length - 1]
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-6 lg:px-6">
@@ -64,11 +64,11 @@ export function DashboardPage() {
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatTile label="Lessons completed" value={`${s.lessons.done}/${s.lessons.total}`} detail="across all modules" frac={s.lessons.done / s.lessons.total} />
-        <StatTile label="Practical exercises" value={`${s.exercises.done}/${s.exercises.total}`} detail="Circuit Lab exercises" frac={s.exercises.done / s.exercises.total} />
-        <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="inverter designs built" frac={s.projects.done / s.projects.total} />
-        <StatTile label="Assessment average" value={pct(s.assessments.averagePct)} detail={`${s.assessments.taken} of ${s.assessments.total} attempted`} />
-        <StatTile label="Troubleshooting success" value={pct(s.troubleshooting.ratePct)} detail={`${s.troubleshooting.correct} correct of ${s.troubleshooting.attempts}`} />
-        <StatTile label="Components identified" value={`${s.components.done}/${s.components.total}`} detail="inverter parts" frac={s.components.done / s.components.total} />
+        <StatTile label="Practical exercises" value={`${s.exercises.done}/${s.exercises.total}`} detail="Circuit Lab · from Phase 4" frac={s.exercises.done / s.exercises.total} />
+        <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="Build workshop · from Phase 6" frac={s.projects.done / s.projects.total} />
+        <StatTile label="Assessment average" value={pct(s.assessments.averagePct)} detail={s.assessments.taken ? `${s.assessments.taken} of ${s.assessments.total} attempted` : 'Assessments · from Phase 10'} />
+        <StatTile label="Troubleshooting success" value={pct(s.troubleshooting.ratePct)} detail={s.troubleshooting.attempts ? `${s.troubleshooting.correct} correct of ${s.troubleshooting.attempts}` : 'Repair workshop · from Phase 9'} />
+        <StatTile label="Components identified" value={`${s.components.done}/${s.components.total}`} detail="3D Lab · from Phase 2" frac={s.components.done / s.components.total} />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -124,6 +124,11 @@ export function DashboardPage() {
                       {b.title}
                     </div>
                     <p className="mt-0.5 text-xs text-ink-500">{b.description}</p>
+                    {!got && b.availableFromPhase && (
+                      <p className="mt-1">
+                        <Tag>Unlocks in Phase {b.availableFromPhase}</Tag>
+                      </p>
+                    )}
                     <span className="sr-only">{got ? 'Earned' : 'Not yet earned'}</span>
                   </li>
                 )

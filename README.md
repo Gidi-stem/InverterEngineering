@@ -8,7 +8,8 @@ An interactive 3D engineering and repair simulator for learning how electrical i
 npm install
 npm run dev        # http://localhost:5173
 npm run typecheck  # TypeScript project check
-npm test           # engine and selector unit tests
+npm test           # engine, store and selector unit tests
+npm run lint       # oxlint
 npm run build      # production build in dist/ (relative paths, so it runs from any folder)
 npm run preview    # serve the production build
 ```
@@ -22,6 +23,6 @@ npm run preview    # serve the production build
 - Progress is saved in IndexedDB and survives reloads
 - Every planned section has a page with its final syllabus, objectives, prerequisites and safety notes
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, data models, simulation strategy and roadmap.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, data models, simulation strategy and roadmap, and [docs/PHASE-2-PLAN.md](docs/PHASE-2-PLAN.md) for the 3D dissection laboratory plan.
 
 > Educational simulation only. It does not qualify anyone to work on live electrical equipment.
