@@ -1,23 +1,15 @@
 import { useMemo, useState } from 'react'
+import type { DemoId } from '../../content/academy/types'
 import { Link } from 'react-router-dom'
 import { BUILD_PROJECT_BY_ID, suggestSelection } from '../../content/buildProjects'
 import { calculate } from '../../engine/design/calc'
 import { quasiSquareCrest, quasiSquareTHD } from '../../engine/design/testing'
 import { LcFilter, Spwm } from './diagrams'
+import { FoundationDemo } from './DemosF'
+import { Slider } from './Slider'
+import { SolarDemo } from './DemosSolar'
 
 /** Interactive lesson demonstrations. Every number is computed live from the engine’s formulas. */
-function Slider({ label, value, min, max, step, onChange, fmt }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; fmt: (v: number) => string }) {
-  return (
-    <label className="block text-xs text-ink-400">
-      <span className="flex justify-between">
-        <span>{label}</span>
-        <span className="readout text-ink-100">{fmt(value)}</span>
-      </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-signal-500" />
-    </label>
-  )
-}
-
 function SpwmChain() {
   const [m, setM] = useState(0.8)
   const [fr, setFr] = useState(15)
@@ -156,9 +148,25 @@ function DesignCalcDemo() {
   )
 }
 
-export function Demo({ id }: { id: 'spwm-chain' | 'quasi-square' | 'lc-filter' | 'design-calc' }) {
-  if (id === 'spwm-chain') return <SpwmChain />
-  if (id === 'quasi-square') return <QuasiSquareDemo />
-  if (id === 'lc-filter') return <LcDemo />
-  return <DesignCalcDemo />
+export function Demo({ id }: { id: DemoId }) {
+  switch (id) {
+    case 'body-current':
+    case 'cap-discharge':
+    case 'ohms-law':
+    case 'divider':
+    case 'rc-charge':
+    case 'voltage-drop':
+    case 'battery-load':
+      return <FoundationDemo id={id} />
+    case 'spwm-chain':
+      return <SpwmChain />
+    case 'quasi-square':
+      return <QuasiSquareDemo />
+    case 'lc-filter':
+      return <LcDemo />
+    case 'design-calc':
+      return <DesignCalcDemo />
+    default:
+      return <SolarDemo id={id} />
+  }
 }

@@ -246,9 +246,47 @@ The curriculum and competency framework are specified in `docs/CURRICULUM-BLUEPR
 - Scheduled prerequisites are "recommended", not locks.
 - Competency levels are derived as awareness → applied → virtual competency.
 
-**Code splitting.** Course content and Academy pages are lazy chunks (244 kB and 78 kB); the dashboard banner is a separate small chunk.
+**Code splitting.** Course content and Academy pages are lazy chunks. `catalogue.ts` (every course) is imported by `logic.ts`, so the full course catalogue is one chunk; it stayed essentially flat through Phase 6 and grew with Phase 7's content (see §10a). The main entry bundle itself did not grow (≈333 kB before and after Phase 7).
 
 **Tests** enforce the lesson standard and minimum depth. They also check every lab link, diagram id and glossary term, the answer keys and marking, progression, the examination cool-down, competency derivation and record sanitising.
+
+## 10a. Prerequisite gates, F1/F2, and the Solar and Hybrid Engineering Laboratory (Phase 7)
+
+**Gates** (`content/academy/gates.ts`). A `PracticalArea` (`'circuit' | 'build' | 'solar' | 'lab3d-procedure'`) maps to the mandatory prerequisite courses it needs:
+
+- F1 (Electrical Safety and Fundamentals) alone gates the 3D lab's guided disassembly/reassembly procedure and F2's own circuit-lab exercises (`ckt-01`…`ckt-03`, `sim-01`, `sim-02`), since those are F2's own practicals and F2 cannot be locked behind itself.
+- F1 **and** F2 gate everything else practical: the Build laboratory, every other circuit-lab exercise, and the Solar laboratory.
+- `gateStatus(progress, area, exerciseId?)` returns `{ open, missing }`; `requiredCourses()` is the pure lookup the tests enumerate against. Reading the Component Library, exploring the 3D models (not the guided procedure) and studying academy lessons are never gated.
+- `<GateNotice>` renders the closed state (`data-testid="practical-gate"`, one `data-testid="gate-course-<id>"` link per missing course) in the circuit lab, the 3D lab's procedure tab and the Solar laboratory. The Build laboratory shows a non-blocking notice instead (`data-testid="build-gate"`) and still lists its projects, since each project's own gate is enforced where it opens in the circuit lab.
+
+**Practical task engine** (`content/academy/types.ts`, `logic.ts`). A `PracticalTask` is one of four kinds, each strictly marked (no partial credit) by `markTask()`:
+
+- `sequence` — order a pool of steps (with distractors) correctly; any distractor, any missing step, or the wrong order fails.
+- `hazards` — select exactly the hazardous items from a scene; one miss or one false positive fails.
+- `procedure` — choose actions one at a time against a simulated scene; an unsafe action fails immediately, otherwise the required action subsequence and the final conclusion must both be correct.
+- `calc` — a `QuestionSet` in practice mode; every question must be correct.
+
+`<TaskRunner>` (sequence/hazards/procedure) and `<QuestionSet testid="calc">` (calc) render these; both report to `PracticalPage`, which calls `recordAttempt` and credits the practical through the module's existing evidence/credit rules (quiz passed first) — no new credit path was added.
+
+**F1 (Electrical Safety and Fundamentals) and F2 (DC Electrical Systems and Fundamentals)** are now fully authored, published courses, no longer "scheduled" placeholders:
+
+- F1 — 4 modules (shock physiology and PPE; hazard identification; safe isolation and proving dead; protection, earthing and workshop practice), 12 lessons, practicals `f1-isolation-sequence` (sequence), `f1-prove-dead` (procedure), `f1-hazards-bench` (hazards) and `f1-stored-energy` (calc), examination (pass 80 %, 45 min, 3 attempts/24 h).
+- F2 — 5 modules (charge/current/voltage; resistance/Ohm's law/power; series/parallel circuits and Kirchhoff's laws; RC/RL time constants; DC sources and systems), 14 lessons, a mix of practicals linking to existing circuit-lab/simulation exercises plus new calc tasks, examination (pass 70 %, 60 min, 3 attempts/24 h).
+- New foundation diagrams and demonstrations (`features/academy/diagramsF.tsx`, `DemosF.tsx`) are driven by the same engines used elsewhere (Ohm's law, RC/RL exponentials, voltage drop, battery internal resistance), not bespoke illustrations.
+
+**Solar engine** (`engine/solar/`), independent of the UI and fully unit-tested:
+
+- `pv.ts` — single-diode PV model (`I = I_ph − I₀·[e^((V+I·Rs)/a) − 1]`) fitted by bisection to datasheet V_oc/I_sc/V_mp/I_mp with temperature coefficients and NOCT-based cell temperature; `arrayCurve()` composes series/parallel strings with per-module irradiance (shading) and bypass diodes; `perturbObserve()` is a real perturb-and-observe MPPT tracker (can settle on a local peak under partial shading, as the real algorithm does); `pwmOperating()` models a PWM controller clamping array voltage to the battery.
+- `sizing.ts` — `sizeSystem()` is the full load-profile-to-installation method: hourly load profile → daily energy/peak/surge → inverter → system voltage → battery bank (autonomy, DoD, round-trip efficiency) → PV array (temperature/soiling/wiring/mismatch derates, string-voltage window from cold V_oc and hot V_mp) → controller → cables (voltage-drop sizing) → protection (1.25×/1.56× fusing factors) → generator (start/stop SOC with hysteresis above the low-voltage disconnect). Every figure is returned as a `SizedItem` with its formula, worked numbers and rationale — nothing is a bare result.
+- `dispatch.ts` — multi-day, 10-minute-step clear-sky dispatch simulation (off-grid/grid-tied/hybrid priorities, anti-islanding, generator auto-start/stop).
+- `faults.ts`, `commissioning.ts` — ten troubleshooting scenarios and a predict/measure/compare commissioning workflow, both driven by the same sizing/PV engine so readings are internally consistent with the learner's own design.
+- Example modules and presets are explicitly tagged `source: 'illustrative'` and never presented as manufacturer datasheets (per the standing "do not invent datasheet values" constraint).
+
+**Solar laboratory UI** (`features/solar/`) — five tabs on `/solar`, gated by F1+F2: System design (editable load table, site/system/battery/module/cable configuration, a fully explained calculation list, downloadable Markdown report, "record this design" once no danger-level issue remains), PV I–V laboratory (interactive tracer with a rotating prediction task checked against the engine), Energy management (1–3 day dispatch simulation with weather and outage controls), Troubleshooting (ten scenarios, readings generated by the fault engine, graded diagnosis) and Commissioning (predict/measure/compare, with injectable practice faults; recording requires both correct predictions and a healthy as-built system).
+
+**S2 (Solar and Hybrid Engineering)** — 5 modules, 15 lessons, prerequisites F1+F2, recommended S1+P5, examination (pass 70 %, 75 min). Its practicals are evidenced by the solar laboratory's own recorded activities (`solar:design-ok`, `solar:iv`, `solar:sim`, `solar:commission`, four `solar:fault:<id>`) and by hand-worked sizing/commissioning-sequence calc/sequence tasks, alongside the design-chain projects already in Build.
+
+**Verification.** Unit tests (`academy.test.ts`, `solar.test.ts`) cover gate matrices, task marking (every failure mode per task kind, plus a "perfect response passes" check), the PV model against hand-calculated datasheet points, the sizing method against a hand check, dispatch totals, fault scenarios and commissioning. A qualified-learner browser pass (Playwright, with a pre-built "F1+F2 complete" IndexedDB state injected) exercises every gate, the F1 practical tasks, and all five solar-lab tabs end-to-end, at desktop and 390 px-phone viewports, with no console errors.
 
 ## 11. Persistence and robustness
 
@@ -280,19 +318,24 @@ The curriculum and competency framework are specified in `docs/CURRICULUM-BLUEPR
 | 4 | Circuit connection laboratory: schematic editor, 20 part types, connection graph, MNA solver, fault explanations, ten assessed exercises, saving | **Done** (see PHASE-4-REPORT.md) |
 | 5 | Electrical simulation engine: transient MNA, AC analysis, PWM/SPWM, switching, thermal estimate, oscilloscope, ten experiments, Fundamentals lessons | **Done** (see PHASE-5-REPORT.md) |
 | 6 | Build Your Own Inverter (eight projects, design engine, test suite) + Learning Academy framework and course S1 | **Done** (see PHASE-6-REPORT.md) |
-| 7 | Solar and hybrid lab + courses S2, P5 | Next (awaiting approval) |
-| 8 | Virtual instruments bound to the simulation + F5, S4.M1 | |
+| 7 | F1 and F2 fully authored; prerequisite gates; Solar and Hybrid Engineering Laboratory and course S2 | **Done** (see PHASE-7-REPORT.md) |
+| 8 | Virtual instruments bound to the simulation + F5, S4.M1 | Next (awaiting approval) |
 | 9 | Repair workshop (17 scenarios) + S4 | |
 | 10 | Assessments, projects, final integration | |
-| 11–14 | Proposed curriculum phases (F1–F4, P1–P4, S3, S5): see CURRICULUM-BLUEPRINT.md §8, to be confirmed | |
+| 11 | Battery Engineering and Energy Storage | |
+| 12 | Installation and Commissioning | |
+| 13 | Advanced Diagnostics and Professional Repair | |
+| 14 | Maintenance, Standards and Professional Practice | |
 
 Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warnings) and `npm run build` pass; every route and control is smoke-tested in a browser (desktop, tablet, 390 px phone, plain-HTTP LAN access) with no console errors from app code; 3D rendering is checked with headless Chromium (SwiftShader WebGL 2); earlier phases are re-checked.
 
-## 14. Known limitations after Phase 6
+## 14. Known limitations after Phase 7
 
 - Five sections still show only their syllabus; their workspaces arrive in the phases above.
 - One badge and the troubleshooting counter depend on later phases (labelled in the UI).
-- Learning Academy: only S1 is authored; the other fourteen courses show their syllabus as "scheduled". Written homework and assignment parts are self-reviewed against model answers (not stored or teacher-marked). Records are per browser; there is no teacher or institution account.
+- Learning Academy: F1, F2, S1 and S2 are authored and published; the other eleven courses show their syllabus as "scheduled". Written homework and assignment parts are self-reviewed against model answers (not stored or teacher-marked). Records are per browser; there is no teacher or institution account.
+- Solar laboratory: the single-diode model and sizing method are an educational estimate with typical allowances (stated throughout the UI and reports), not a certified design; example PV modules and all other illustrative component values are explicitly labelled and never presented as manufacturer datasheets. The dispatch simulation uses a clear-sky model with a per-day weather scaling factor, not real weather or an hourly solar-resource dataset. The P&O MPPT demonstration can settle on a local peak under partial shading, as the real algorithm does — this is a teaching point, not a bug.
+- Code splitting: `catalogue.ts` (every course's content) is pulled into the `logic.ts` chunk because `logic.ts` needs the full course list for its gating/marking functions; that chunk grows with every course authored (≈245 kB after Phase 6, ≈670 kB after Phase 7) and loads whenever anything imports `logic.ts`, including the dashboard's "what's next" banner. The main entry bundle itself has not grown. Splitting `logic.ts`'s pure functions from the course catalogue would keep this chunk flat as more courses are authored; worth doing before Phase 11–14 add the remaining eleven courses, but out of scope for Phase 7's approved sequence.
 - Build projects use simplified models, all labelled in the UI:
   - PV array: piecewise-linear, with the MPP at the knee.
   - Hybrid charger: resistor-limited, delivering about a fifth of the design current.

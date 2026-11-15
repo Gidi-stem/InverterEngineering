@@ -1,4 +1,4 @@
-import type { ToolLink } from '../types'
+import type { SolarTab, ToolLink } from '../types'
 
 /** Shorthand constructors for links into the existing laboratories. */
 export const to = {
@@ -9,4 +9,5 @@ export const to = {
   ckt: (label: string, ex: string): ToolLink => ({ kind: 'circuit', label, ex }),
   sim: (label: string, exp: string): ToolLink => ({ kind: 'sim', label, exp }),
   build: (label: string, project: string): ToolLink => ({ kind: 'build', label, project }),
+  solar: (label: string, tab: SolarTab = 'design'): ToolLink => ({ kind: 'solar', label, tab }),
 }

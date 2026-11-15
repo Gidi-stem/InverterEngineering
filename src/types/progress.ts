@@ -22,7 +22,7 @@ export interface ActivityRecord {
 }
 
 /** Learning Academy: one marked attempt at a knowledge check, quiz, assignment, examination or troubleshooting task. */
-export type AttemptKind = 'check' | 'quiz' | 'assignment' | 'exam' | 'troubleshoot'
+export type AttemptKind = 'check' | 'quiz' | 'assignment' | 'exam' | 'troubleshoot' | 'practical'
 export interface Attempt {
   id: string
   kind: AttemptKind

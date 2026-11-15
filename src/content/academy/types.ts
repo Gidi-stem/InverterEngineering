@@ -17,6 +17,10 @@ export type ToolLink =
   | { kind: 'circuit'; label: string; ex: string }
   | { kind: 'sim'; label: string; exp: string }
   | { kind: 'build'; label: string; project: string }
+  | { kind: 'solar'; label: string; tab: SolarTab }
+
+export const SOLAR_TABS = ['design', 'iv', 'energy', 'faults', 'commission'] as const
+export type SolarTab = (typeof SOLAR_TABS)[number]
 
 export interface Formula {
   name: string
@@ -71,8 +75,32 @@ export const DIAGRAM_IDS = [
   'protection-chain',
   'test-bench',
   'fault-method',
+  'body-current',
+  'circuit-loop',
+  'isolation-flow',
+  'rcd',
+  'fault-loop',
+  'risk-hierarchy',
+  'series-parallel',
+  'kirchhoff',
+  'rc-curve',
+  'rl-curve',
+  'battery-model',
+  'voltage-drop',
+  'diode-led',
+  'si-scale',
+  'pv-cell',
+  'iv-family',
+  'string-config',
+  'mppt-pwm',
+  'charge-stages',
+  'design-chain',
+  'energy-balance',
+  'system-types',
 ] as const
 export type DiagramId = (typeof DIAGRAM_IDS)[number] | `schematic:${string}`
+
+export type DemoId = 'spwm-chain' | 'quasi-square' | 'lc-filter' | 'design-calc' | 'body-current' | 'cap-discharge' | 'ohms-law' | 'divider' | 'rc-charge' | 'voltage-drop' | 'battery-load' | 'pv-iv' | 'load-profile' | 'array-config' | 'mppt-track' | 'energy-day'
 
 export interface LessonContent {
   objectives: string[]
@@ -84,7 +112,7 @@ export interface LessonContent {
   examples: WorkedExample[]
   applications: string
   mistakes: { mistake: string; correction: string }[]
-  demo: { title: string; text: string; link: ToolLink; embed?: 'spwm-chain' | 'quasi-square' | 'lc-filter' | 'design-calc' }
+  demo: { title: string; text: string; link: ToolLink; embed?: DemoId }
   activities: ToolLink[]
   check: Question[]
   summary: string[]
@@ -101,6 +129,31 @@ export interface AcademyLesson {
   content?: LessonContent
 }
 
+/**
+ * A practical assessment carried out inside the academy (used where the laboratory itself is gated by
+ * the course being taught, e.g. F1 safety drills). Marked strictly: a practical is passed or not.
+ * - sequence: choose the correct steps (rejecting unsafe or useless ones) and put them in order;
+ * - hazards: identify every hazard in a described scene, and only the hazards;
+ * - procedure: perform actions one at a time and observe the results, then draw the conclusion;
+ *   an unsafe action fails the attempt at once;
+ * - calc: engineering calculations, all of which must be correct.
+ */
+export type PracticalTask =
+  | { id: string; kind: 'sequence'; title: string; brief: string; steps: string[]; distractors: { text: string; why: string }[]; explain: string }
+  | { id: string; kind: 'hazards'; title: string; brief: string; scene: string; items: { id: string; label: string; hazard: boolean; why: string }[]; explain: string }
+  | {
+      id: string
+      kind: 'procedure'
+      title: string
+      brief: string
+      actions: { id: string; label: string; result: string; unsafe?: string }[]
+      /** Action ids that must all be performed, in this order (others may be interleaved). */
+      required: string[]
+      conclusion: { prompt: string; options: string[]; answer: number; explain: string }
+      explain: string
+    }
+  | { id: string; kind: 'calc'; title: string; brief: string; questions: Question[]; explain: string }
+
 /** Evidence a practical task is complete, read from the records the laboratories already write. */
 export type Evidence =
   | { kind: 'project'; id: string }
@@ -108,12 +161,16 @@ export type Evidence =
   | { kind: 'activity'; id: string }
   | { kind: 'lesson'; id: string }
   | { kind: 'troubleshoot'; project: string }
+  | { kind: 'task'; id: string }
 
 export interface Practical {
   id: string
   title: string
   description: string
-  link: ToolLink
+  /** Laboratory where the practical is done (absent for academy practical assessments). */
+  link?: ToolLink
+  /** Academy practical assessment (evidence kind 'task'). */
+  task?: PracticalTask
   evidence: Evidence
 }
 
@@ -134,6 +191,8 @@ export interface Course {
   stage: Stage
   summary: string
   prerequisites: string[]
+  /** Advisory prior study (never a lock). */
+  recommended?: string[]
   /** "published": fully authored; "scheduled": syllabus only, authored in `phase`. */
   status: 'published' | 'scheduled'
   phase: number

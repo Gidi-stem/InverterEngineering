@@ -1,6 +1,6 @@
 # Inverter Engineering Lab: Master Curriculum and Competency Blueprint
 
-Version 1.0, prepared with Phase 6. This document defines the complete learning programme. It covers:
+Version 2.0, updated at the start of Phase 7 (approved decisions: fourteen-phase roadmap; F1 and F2 mandatory and delivered before the solar laboratory). Version 1.0 was prepared with Phase 6. This document defines the complete learning programme. It covers:
 - what is taught, in what order, and with which prerequisites;
 - how every lesson is structured and how each one uses the platform's engineering tools;
 - how learning is assessed, and how competencies are recorded.
@@ -25,30 +25,31 @@ It also identifies the educational gaps in Phases 1–5 and schedules the work t
 
 ### 1.1 Course map and prerequisites
 
-| Course | Title | Level | Prerequisites | Main platform resources |
-|---|---|---|---|---|
-| F1 | Electrical Safety and Workshop Practice | Beginner | none (required first) | 3D lab (isolation, discharge, PE), library (fuse, breaker, PE), safety notices |
-| F2 | DC Electrical Fundamentals | Beginner | F1 | Circuit lab (ckt-01…03), simulator (sim-01, sim-02), waveform bench |
-| F3 | AC Electrical Fundamentals | Beginner | F2 | Simulator (AC source, AC analysis, sim-03), waveform bench, transformer models |
-| F4 | Electronic Components for Inverter Engineering | Beginner → Intermediate | F2 (F3 for magnetics) | Component library (24 entries, test procedures, comparisons), 3D lab, circuit lab |
-| F5 | Measurement and Virtual Instruments | Beginner → Intermediate | F2, F3 | Library test procedures, simulator oscilloscope, Phase 8 instruments |
-| P1 | Circuit Analysis and Construction | Intermediate | F2, F4.M1 | Circuit lab (editor, checks, exercises ckt-01…10) |
-| P2 | Power Electronics Fundamentals | Intermediate | F3, F4, P1 | Simulator (sim-03…08), circuit lab, thermal and loss tools |
-| P3 | Inverter Principles | Intermediate | P2 | Simulator (sim-08…10), waveform bench, Fundamentals lessons fun-01…07 |
-| P4 | Inside a Real Inverter | Intermediate | F1, F4 | 3D lab (LF-3K, SQ-1K), guided disassembly/reassembly, asm-01 |
-| P5 | Batteries and DC Systems | Intermediate | F2, F1 | Library (battery terminals, fuse), simulator battery model, Phase 7 battery lab |
-| S1 | Inverter Design and Construction | Advanced | P2, P3, P4 (P5 recommended) | Build lab (bld-a…h), configurator, compatibility, test suite, simulator |
-| S2 | Solar PV and Hybrid Systems | Advanced | S1, P5 | Phase 7 solar/hybrid lab, bld-g, bld-h |
-| S3 | Installation, Commissioning and Compliance | Advanced | S1, F1 | Phase 8 instruments, Phase 7 system lab, 3D terminals/PE |
-| S4 | Testing, Maintenance and Troubleshooting | Advanced | P4, F5, S1 | Phase 8 instruments, Phase 9 repair workshop (17 scenarios), library test procedures |
-| S5 | Capstone Project and Competency Certification | Advanced | S1–S4 | Phase 10 assessments and projects, all labs |
+| Course | Title | Level | Required prerequisites | Recommended | Main platform resources | Authored in |
+|---|---|---|---|---|---|---|
+| F1 | Electrical Safety and Fundamentals | Beginner | none (**mandatory first course**) | — | Academy practical assessments (isolation drill, prove-dead drill, hazard identification, protection sizing), 3D lab (view), library (fuse, breaker, PE) | Phase 7 |
+| F2 | DC Electrical Systems and Fundamentals | Beginner | F1 | — | Circuit lab (ckt-01…03), simulator (sim-01, sim-02), academy calculation tasks | Phase 7 |
+| F3 | AC Electrical Fundamentals | Beginner | F2 | — | Simulator (AC source, AC analysis, sim-03), waveform bench, transformer models, Phase 8 instruments | Phase 8 |
+| F4 | Electronic Components for Inverter Engineering | Beginner → Intermediate | F2 | F3 | Component library (24 entries, test procedures, comparisons), 3D lab, circuit lab, Phase 9 workshop | Phase 9 |
+| F5 | Measurement and Virtual Instruments | Beginner → Intermediate | F1, F2 | F3 | Phase 8 virtual instruments, library test procedures, simulator oscilloscope | Phase 8 |
+| P1 | Circuit Analysis and Construction | Intermediate | F2 | F4 | Circuit lab (editor, checks, exercises ckt-01…10) | Phase 10 |
+| P2 | Power Electronics Fundamentals | Intermediate | F3, P1 | F4 | Simulator (sim-03…08), circuit lab, thermal and loss tools | Phase 10 |
+| P3 | Inverter Principles | Intermediate | P2 | — | Simulator (sim-08…10), waveform bench, Fundamentals lessons fun-01…07 | Phase 10 |
+| P4 | Inside a Real Inverter | Intermediate | F1 | F4 | 3D lab (LF-3K, SQ-1K), guided disassembly/reassembly, asm-01, Phase 9 workshop | Phase 9 |
+| P5 | Battery Engineering and Energy Storage | Intermediate | F1, F2 | S2 | Phase 11 battery laboratory, solar lab battery sizing, library battery terminals | Phase 11 |
+| S1 | Inverter Design and Construction | Advanced | F1, F2 | P2, P3, P4 | Build lab (bld-a…h), configurator, compatibility, test suite, simulator | **Phase 6 (done)** |
+| S2 | Solar PV and Hybrid Engineering | Advanced | F1, F2 | S1, P5 | Phase 7 Solar and Hybrid Engineering Laboratory (load profile → complete system design, PV I–V lab, 24 h energy management, troubleshooting, commissioning), bld-g, bld-h | Phase 7 |
+| S3 | Installation and Commissioning | Advanced | F1, F2 | S2, F5 | Phase 12 installation and commissioning laboratory, solar lab designs, instruments | Phase 12 |
+| S4 | Advanced Diagnostics and Professional Repair | Advanced | F1, F2 | F5, P4, S1 | Phase 9 repair workshop (17 scenarios), Phase 13 advanced diagnostics, instruments | Phase 13 |
+| S5 | Maintenance, Standards and Professional Practice (with capstone) | Advanced | S1, S2, S3, S4 | all | Phase 14 maintenance planner, standards and documentation, capstone and certification | Phase 14 |
 
-**Progression rules:**
-- F1 must be passed (module quizzes ≥ 80 %, plus the safety competency) before any practical laboratory task is credited.
-- A course is unlocked when all its prerequisite courses are passed.
-- Within a course, a module's quiz must be passed before the next module's practical tasks are credited. Lessons stay readable for revision.
-- **Courses not yet authored** are shown with their syllabus and status "scheduled". A prerequisite that is still scheduled is shown as *recommended prior study* (with links to the existing tools that cover it), not as a lock. It becomes a lock when that course is published. This means a learner is never blocked by content that does not exist yet.
-- Existing laboratory progress always remains valid. Completing a practical before passing the module quiz is recorded and keeps its date; it is credited towards the module once the quiz is passed.
+**Progression rules (enforced):**
+- **F1 is mandatory** before any practical laboratory activity involving electrical systems: the circuit laboratory, the simulator experiments, the build projects, the solar and hybrid laboratory, and the guided disassembly, discharge and reassembly procedures of the 3D laboratory. Reading the library and exploring the 3D models remain open, because they are study, not practice.
+- **F2 is mandatory** before DC circuit construction, battery engineering and solar/battery practical activities: all circuit-lab exercises and experiments except F2's own practical tasks (ckt-01, ckt-02, ckt-03, sim-01, sim-02, which need F1 only), the build projects, the solar and hybrid laboratory and the Phase 11 battery laboratory.
+- A course's lessons, quizzes and examination open when all its required prerequisite courses are passed. Recommended courses are shown as advice, never as locks.
+- Passing a course means: every lesson's knowledge check passed (≥ 70 %), every module quiz (≥ 70 %; **≥ 80 % in F1**) and assignment (≥ 70 %) passed, every practical assessment completed, and the formal examination passed (≥ 70 %; **≥ 80 % in F1**).
+- Within a course, a module's practical tasks are credited after its quiz is passed. Existing laboratory progress always remains valid and keeps its date.
+- A required prerequisite that is not yet authored is shown as recommended until it is published. By the end of Phase 14 every course is authored, so this rule then no longer applies.
 
 ---
 
@@ -56,22 +57,24 @@ It also identifies the educational gaps in Phases 1–5 and schedules the work t
 
 Notation: **L** = lesson. Sub-lessons are the standard sections of §3. *Tools* lists the integrated activities. Lessons marked ★ already have assessed practical activities on the platform.
 
-### F1 Electrical Safety and Workshop Practice (Beginner)
-| Module | Lessons | Tools |
+### F1 Electrical Safety and Fundamentals (Beginner): mandatory first course, Phase 7
+| Module | Lessons | Tools and practical assessments |
 |---|---|---|
-| F1.M1 Hazards of electricity | L1 How current harms the body (current paths, let-go, fibrillation thresholds as published ranges) · L2 Shock, arc flash, burns and fire · L3 Batteries: short-circuit current, hydrogen, acid · L4 Stored energy: capacitors and inductors | 3D lab discharge simulator; library: capacitor, fuse |
-| F1.M2 Safe isolation | L1 Isolation, lock-out/tag-out principles · L2 Prove dead: test-before-touch · L3 Capacitor discharge methods and verification · L4 PV arrays cannot be "switched off" by daylight | 3D guided procedure (isolate, discharge) ★, library: breaker, solar-input |
-| F1.M3 Protection and earthing | L1 Fuses and breakers: what they protect · L2 Protective earth, bonding, RCDs · L3 Insulation and double insulation · L4 Enclosures, IP ratings, labelling | Library: fuse, circuit-breaker, protective-earth, enclosure; 3D PE stud |
-| F1.M4 Workshop practice | L1 Tools, PPE and the bench · L2 Low-voltage, current-limited practice supplies · L3 Documentation and permits · L4 When to stop and ask a qualified person | Circuit lab bench supply (CV/CC) |
+| F1.M1 Electricity and its hazards | L1 Voltage, current, resistance and the circuit · L2 How electric current harms the body · L3 Shock, arc flash, burns and fire | Ohm's-law body-current calculator demonstration; practical: hazard identification on a workbench scene |
+| F1.M2 Energy sources and stored energy | L1 Batteries: short-circuit current, gases and chemicals · L2 Capacitors and inductors: stored energy · L3 Multiple sources: PV arrays, grid, generators and back-feed | Capacitor discharge demonstration; library fuse, capacitor, solar input; practical: stored-energy and discharge-time assessment |
+| F1.M3 Safe isolation | L1 Isolation and lock-out/tag-out · L2 Proving dead · L3 Capacitor discharge and verification | Practicals: safe-isolation sequence drill, prove-dead drill with a virtual voltage tester |
+| F1.M4 Protection, earthing and workshop practice | L1 Fuses and circuit breakers · L2 Earthing, bonding, RCDs and insulation · L3 Workshop practice: PPE, tools, measurement categories and risk assessment | Library fuse, breaker, PE, comparison fuse vs breaker; practical: protection selection assessment |
 
-### F2 DC Electrical Fundamentals (Beginner)
-| Module | Lessons | Tools |
+F1 passes at 80 % (quizzes and examination), reflecting its safety role.
+
+### F2 DC Electrical Systems and Fundamentals (Beginner): mandatory before DC, battery and solar practicals, Phase 7
+| Module | Lessons | Tools and practical assessments |
 |---|---|---|
-| F2.M1 Charge, voltage, current | L1 Atoms, charge and conductors · L2 Current and its direction · L3 Voltage as energy per charge · L4 Units, prefixes and engineering notation | Circuit lab node voltages |
-| F2.M2 Resistance and Ohm's law | L1 Resistance and resistivity · L2 Ohm's law, derived and applied ★ (ckt-01) · L3 Power and energy (P = VI, I²R, kWh) · L4 Resistor ratings and heat | ckt-01 ★, library resistor |
-| F2.M3 Circuits | L1 Series circuits and voltage dividers · L2 Parallel circuits and current dividers · L3 Kirchhoff's current and voltage laws · L4 Combination circuits, worked analysis · L5 Open and short circuits | Circuit lab checks (open/short) |
-| F2.M4 Energy storage and time | L1 Capacitance and stored energy ½CV² · L2 RC charging, τ = RC ★ (sim-01, ckt-03) · L3 Inductance and stored energy ½LI² · L4 RL response, τ = L/R ★ (sim-02) | sim-01, sim-02 ★, ckt-03 ★ |
-| F2.M5 DC sources | L1 Batteries as sources with internal resistance · L2 Bench supplies, current limit · L3 Diodes as one-way valves (preview of F4) · L4 LEDs and current limiting ★ (ckt-02) | ckt-02 ★ |
+| F2.M1 Charge, current and voltage | L1 Charge, conductors and insulators · L2 Current and voltage · L3 Units, prefixes and engineering notation | Circuit lab node voltages; practical: unit-conversion assessment |
+| F2.M2 Resistance, Ohm's law and power | L1 Resistance and resistivity · L2 Ohm's law · L3 Power, energy and heat | ckt-01 ★, Ohm's-law demonstration; library resistor |
+| F2.M3 Circuits | L1 Series circuits and voltage dividers · L2 Parallel circuits and current dividers · L3 Kirchhoff's laws and combination circuits | Circuit-solver demonstration; practical: circuit analysis assessment |
+| F2.M4 Energy storage and time | L1 Capacitors and the RC time constant · L2 Inductors and the RL time constant | sim-01 ★, ckt-03 ★, sim-02 ★ |
+| F2.M5 DC sources and DC systems | L1 Batteries as sources: EMF, internal resistance, capacity, series and parallel · L2 DC system wiring: conductor size, voltage drop, fusing and polarity · L3 Diodes and LEDs: one-way valves and current limiting | ckt-02 ★, voltage-drop demonstration; practical: DC system design assessment |
 
 ### F3 AC Electrical Fundamentals (Beginner)
 | Module | Lessons | Tools |
@@ -129,12 +132,12 @@ Notation: **L** = lesson. Sub-lessons are the standard sections of §3. *Tools* 
 | P4.M2 Safe disassembly and reassembly | L1 Isolation and discharge in practice ★ · L2 Disassembly sequence and why ★ · L3 Reassembly and functional test ★ (l3d-06) | 3D guided procedure ★ |
 | P4.M3 Identification | L1 Recognising components on a board ★ (asm-01) · L2 Comparing a square-wave and a hybrid inverter (SQ-1K vs LF-3K) | 3D identification ★, model comparison |
 
-### P5 Batteries and DC Systems (Intermediate)
+### P5 Battery Engineering and Energy Storage (Intermediate): Phase 11
 | Module | Lessons | Tools |
 |---|---|---|
-| P5.M1 Battery technology | L1 Lead-acid, LiFePO₄, lithium-ion · L2 Capacity, C-rate, Peukert · L3 State of charge and depth of discharge | Phase 7 battery model |
+| P5.M1 Battery technology | L1 Lead-acid, LiFePO₄, lithium-ion · L2 Capacity, C-rate, Peukert · L3 State of charge and depth of discharge | Phase 11 battery laboratory |
 | P5.M2 DC system design | L1 Cable sizing and voltage drop · L2 Fusing and isolation · L3 Series/parallel banks and balancing | Library battery terminals/fuse, simulator |
-| P5.M3 Charging and protection | L1 Charge profiles (bulk/absorption/float, CC/CV) · L2 BMS and low-voltage disconnect · L3 Battery safety and maintenance | Phase 7 charger |
+| P5.M3 Charging and protection | L1 Charge profiles (bulk/absorption/float, CC/CV) · L2 BMS and low-voltage disconnect · L3 Battery safety and maintenance | Phase 11 charger model |
 
 ### S1 Inverter Design and Construction (Advanced): authored in Phase 6
 | Module | Lessons | Tools |
@@ -148,35 +151,39 @@ Notation: **L** = lesson. Sub-lessons are the standard sections of §3. *Tools* 
 
 S1 contains 20 lessons, six module quizzes, six assignments, eight practical build tasks, eight troubleshooting tasks and a formal course examination. It supplies the evidence for competency unit CU-11.
 
-### S2 Solar PV and Hybrid Systems (Advanced): Phase 7
-| Module | Lessons |
-|---|---|
-| S2.M1 PV fundamentals | L1 Photovoltaic effect, I-V curves (single-diode model) · L2 Irradiance and temperature · L3 Strings, arrays, shading, bypass diodes |
-| S2.M2 MPPT and charge control | L1 MPPT algorithms (perturb and observe, incremental conductance) · L2 PWM vs MPPT controllers · L3 Charging stages |
-| S2.M3 Hybrid systems | L1 Energy dispatch priorities · L2 Grid, generator and transfer switching · L3 Anti-islanding and grid codes (overview) |
-| S2.M4 System sizing | L1 Load profiles and energy budgets · L2 Array and battery sizing · L3 Worked system design |
+### S2 Solar PV and Hybrid Engineering (Advanced): Phase 7
+A complete solar and hybrid engineering programme. Students design a complete installation from an actual electrical load profile in the Solar and Hybrid Engineering Laboratory.
 
-### S3 Installation, Commissioning and Compliance (Advanced): new course, scheduled
+| Module | Lessons | Tools |
+|---|---|---|
+| S2.M1 Photovoltaic fundamentals | L1 Solar photovoltaic fundamentals (photovoltaic effect, cells, single-diode model, I–V and P–V curves) · L2 Solar panel construction and specifications (datasheets, STC, NOCT, temperature coefficients, ratings) · L3 PV voltage, current and power calculations (irradiance, temperature, cold V_oc) | Solar lab PV I–V laboratory |
+| S2.M2 Arrays, controllers and conversion | L1 Series and parallel panel configurations (strings, mismatch, shading, bypass diodes) · L2 MPPT and PWM charge controllers (perturb and observe, charging stages) · L3 Solar inverter architecture | Solar lab array configuration and MPPT tracking; bld-g ★ |
+| S2.M3 System design from a load profile | L1 Load profiles and energy budgets · L2 Solar array sizing · L3 Battery bank sizing | Solar lab load profile, array and battery sizing |
+| S2.M4 System types and energy management | L1 Off-grid systems · L2 Grid-connected systems · L3 Hybrid systems and generator integration · L4 Energy management | Solar lab 24 h energy simulation (off-grid, grid-tied, hybrid with generator); bld-h ★ |
+| S2.M5 Installation, commissioning and troubleshooting | L1 Installation design and commissioning · L2 Solar system troubleshooting | Solar lab protection, cables and commissioning checklist; troubleshooting scenarios |
+
+### S3 Installation and Commissioning (Advanced): Phase 12
 | Module | Lessons |
 |---|---|
 | S3.M1 Planning | L1 Site survey and load assessment · L2 Equipment location, ventilation, clearances · L3 Single-line diagrams |
-| S3.M2 Installation | L1 DC wiring and protection · L2 AC wiring, earthing and RCDs · L3 PV mounting and DC isolation (overview) |
+| S3.M2 Installation | L1 DC wiring and protection · L2 AC wiring, earthing and RCDs · L3 PV mounting and DC isolation |
 | S3.M3 Commissioning | L1 Pre-energisation checks (continuity, insulation, polarity) · L2 Staged energisation · L3 Commissioning records and handover |
 | S3.M4 Compliance | L1 Standards and certification (what they are, who certifies) · L2 Documentation and labelling |
 
-### S4 Testing, Maintenance and Troubleshooting (Advanced): Phases 8–9
+### S4 Advanced Diagnostics and Professional Repair (Advanced): Phase 13 (repair workshop from Phase 9)
 | Module | Lessons |
 |---|---|
 | S4.M1 Systematic testing | L1 Test plans · L2 Measuring with virtual instruments on live simulations · L3 Interpreting results |
-| S4.M2 Preventive maintenance | L1 Inspection schedules · L2 Fans, filters, terminals and torque · L3 Battery maintenance |
-| S4.M3 Troubleshooting method | L1 Symptom → hypothesis → test → conclusion · L2 Fault trees · L3 Safety during diagnosis |
-| S4.M4 Repair workshop | L1–L17 One lesson per repair scenario (Phase 9), each with diagnosis, repair and verification |
+| S4.M2 Troubleshooting method | L1 Symptom → hypothesis → test → conclusion · L2 Fault trees · L3 Safety during diagnosis |
+| S4.M3 Repair workshop | L1–L17 One lesson per repair scenario, each with diagnosis, repair and verification |
+| S4.M4 Professional repair practice | L1 Component-level versus board-level repair · L2 Root-cause analysis and failure reports · L3 Verification and return to service |
 
-### S5 Capstone Project and Competency Certification (Advanced): Phase 10
+### S5 Maintenance, Standards and Professional Practice (Advanced): Phase 14
 | Module | Lessons |
 |---|---|
-| S5.M1 Capstone design | L1 Brief and requirements · L2 Design, simulation and report |
-| S5.M2 Competency assessment | L1 Practical competency tasks · L2 Final examination · L3 Portfolio review and virtual-competency record |
+| S5.M1 Preventive maintenance | L1 Inspection schedules · L2 Fans, filters, terminals and torque · L3 Battery and PV maintenance |
+| S5.M2 Standards and professional practice | L1 How standards and certification work · L2 Documentation, records and ethics · L3 Working within one's competence and supervised training |
+| S5.M3 Capstone and certification | L1 Capstone brief and requirements · L2 Design, simulation and report · L3 Practical competency tasks, final examination and virtual-competency record |
 
 ---
 
@@ -227,8 +234,8 @@ Every lesson contains the fourteen sections you specified. The academy page rend
 
 | Unit | Title | Evidence |
 |---|---|---|
-| CU-01 | Apply electrical safety, isolation and discharge procedures | F1 exam; 3D isolation and discharge procedure; asm-01 |
-| CU-02 | Analyse DC circuits and energy storage | F2 exam; ckt-01…03; sim-01, sim-02 |
+| CU-01 | Apply electrical safety, isolation and discharge procedures | F1 exam; F1 practical assessments (hazard identification, isolation sequence, prove-dead, stored energy, protection selection) |
+| CU-02 | Analyse DC circuits, energy storage and DC systems | F2 exam; ckt-01…03; sim-01, sim-02; F2 practical assessments |
 | CU-03 | Analyse AC circuits, power and transformers | F3 exam; sim-03, sim-08; ckt-07 |
 | CU-04 | Identify, test and select inverter components | F4 exam; library test-procedure checks; comparisons; component compatibility (S1) |
 | CU-05 | Use measurement instruments safely and correctly | F5 exam; Phase 8 instrument tasks |
@@ -236,11 +243,12 @@ Every lesson contains the fourteen sections you specified. The academy page rend
 | CU-07 | Explain and analyse power-electronic switching circuits | P2 exam; sim-05…08 |
 | CU-08 | Explain inverter operation and waveform quality | P3 exam; sim-09, sim-10 |
 | CU-09 | Disassemble and reassemble an inverter safely | P4 exam; l3d-06 procedure |
-| CU-10 | Specify and protect battery DC systems | P5 exam; Phase 7 battery tasks |
+| CU-10 | Specify and protect battery DC systems | P5 exam; Phase 11 battery tasks |
 | CU-11 | Design, assemble and test inverters to a specification | S1 exam; build projects passing their test suites |
-| CU-12 | Design solar and hybrid systems | S2 exam; Phase 7 tasks; bld-g, bld-h |
+| CU-12 | Design solar and hybrid systems | S2 exam; solar lab design, energy-management and troubleshooting tasks; bld-g, bld-h |
 | CU-13 | Plan installation and commissioning | S3 exam; commissioning tasks |
-| CU-14 | Diagnose and repair inverter faults | S4 exam; Phase 9 repair scenarios |
+| CU-14 | Diagnose and repair inverter faults | S4 exam; Phase 9 repair scenarios; Phase 13 diagnostics |
+| CU-15 | Maintain systems and practise professionally to standards | S5 exam; maintenance planning; capstone |
 
 Each unit has a level: **Awareness** (lessons and checks done), **Applied** (module quizzes and practicals passed) or **Virtual competency** (all evidence, including the exam). The record always states: *"Virtual competency. Real-world practice requires supervised physical training and locally required qualifications."*
 
@@ -278,26 +286,31 @@ Each unit has a level: **Awareness** (lessons and checks done), **Applied** (mod
 
 ---
 
-## 8. Delivery plan: fourteen phases (proposed, for confirmation)
+## 8. Delivery plan: fourteen phases (approved)
 
-The repository roadmap lists ten phases, and your direction refers to fourteen. Phases 1–5 are delivered. This mapping keeps the agreed order of the engineering phases (6–10) and adds four curriculum phases (11–14) for the courses that teach through the tools already built. **Each engineering phase also authors the courses for its own tools**, so no tool ships without its teaching.
+The ten original development phases are retained and four are added. **Every course is fully authored by the end of Phase 14**; no course remains scheduled or syllabus-only when the programme is declared complete. Each engineering phase also authors the courses that teach through its tools.
 
-| Phase | Engineering deliverable | Academy deliverable |
-|---|---|---|
-| 1–5 | Done (foundation, 3D lab, library, circuit lab, simulation engine) | Mapped to the curriculum (§6); taught in phases 11–13 |
-| **6** | Build Your Own Inverter (eight projects) | **Academy framework:** catalogue, enrolment, prerequisites, 14-section lesson renderer, glossary, knowledge checks, module quizzes, assignments, tool-verified practical tasks, formal examination, attempt history, competency record and export. **S1 fully authored** (20 lessons) |
-| 7 | Solar and hybrid lab | S2 Solar PV and Hybrid Systems; P5 Batteries and DC Systems |
-| 8 | Virtual instruments bound to the simulation | F5 Measurement and Virtual Instruments; S4.M1 Systematic testing |
-| 9 | Repair workshop (17 scenarios) | S4.M2–M4 Maintenance, troubleshooting, one lesson per repair scenario |
-| 10 | Assessments, engineering projects | Practical assessments asm-02…09, projects prj-01…03, wider exam banks |
-| 11 | Foundation curriculum I | F1 Electrical Safety and Workshop Practice; F2 DC Electrical Fundamentals |
-| 12 | Foundation curriculum II | F3 AC Electrical Fundamentals; F4 Electronic Components (teaching through the library and 3D lab) |
-| 13 | Practitioner curriculum | P1 Circuit Analysis; P2 Power Electronics; P3 Inverter Principles; P4 Inside a Real Inverter (teaching through the circuit lab, simulator and 3D lab) |
-| 14 | Installation and certification | S3 Installation, Commissioning and Compliance; S5 Capstone and virtual-competency certification; whole-programme audit |
+| Phase | Engineering deliverable | Courses completed | Status |
+|---|---|---|---|
+| 1–5 | Foundation, 3D lab, library, circuit lab, simulation engine | (mapped in §6; taught by the courses below) | Done |
+| 6 | Build Your Own Inverter; Academy framework | **S1** | Done |
+| 7 | Solar and Hybrid Engineering Laboratory; prerequisite enforcement; practical assessments | **F1, F2** (first, mandatory), **S2** | In progress |
+| 8 | Virtual instruments bound to the simulation | **F3, F5** | |
+| 9 | Repair workshop (17 scenarios) | **F4, P4** | |
+| 10 | Assessments and engineering projects | **P1, P2, P3** | |
+| 11 | Battery Engineering and Energy Storage (battery laboratory) | **P5** | |
+| 12 | Installation and Commissioning (installation laboratory) | **S3** | |
+| 13 | Advanced Diagnostics and Professional Repair | **S4** | |
+| 14 | Maintenance, Standards and Professional Practice; final integration and audit | **S5** | |
 
-**Alternative order:** F1 (safety) and F2 underpin every practical. Phase 11 could therefore move to straight after Phase 6, ahead of the solar lab. This is your choice. Until F1 is published, its safety content is shown on every hazardous activity, and S1.M1 L1 covers construction safety.
+Course count check: S1 (6) + F1, F2, S2 (7) + F3, F5 (8) + F4, P4 (9) + P1, P2, P3 (10) + P5 (11) + S3 (12) + S4 (13) + S5 (14) = 15 courses.
 
-**Scale:** about 150 lessons in total at the lesson standard. A phase with a full course plus a new engineering tool is about the limit of what can be authored and verified properly in one phase.
+**Phase 7 order:**
+1. This blueprint update.
+2. F1 and F2 fully authored.
+3. Prerequisite enforcement.
+4. Verification of F1/F2 examinations and practical assessments.
+5. The solar and hybrid laboratory and S2.
 
 ## 9. Academy architecture (integration with the existing platform)
 

@@ -36,7 +36,7 @@ export function sanitizeProgress(raw: unknown, fallbackCreatedAt = Date.now()): 
   }
 }
 
-const ATTEMPT_KINDS = ['check', 'quiz', 'assignment', 'exam', 'troubleshoot']
+const ATTEMPT_KINDS = ['check', 'quiz', 'assignment', 'exam', 'troubleshoot', 'practical']
 export const MAX_ATTEMPTS = 1000
 
 /** Identifies a backup file: must declare schema v1 and be an object. */

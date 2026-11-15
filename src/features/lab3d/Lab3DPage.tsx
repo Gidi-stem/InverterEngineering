@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { INVERTER_MODELS, MODEL_BY_ID } from '../../content/models'
-import { useProgress } from '../../store/progressStore'
+import { snapshot, useProgress } from '../../store/progressStore'
+import { gateStatus } from '../../content/academy/gates'
+import { GateNotice } from '../academy/GateNotice'
 import type { LearnerLevel } from '../../types/progress'
 import { SafetyNotice } from '../../ui/primitives'
 import { hasWebGL } from './logic/webgl'
@@ -32,6 +34,7 @@ export default function Lab3DPage() {
   const modelId = useLab((s) => s.modelId)
   const model = useMemo(() => getModel(modelId), [modelId])
   const mode = useLab((s) => s.mode)
+  const procGate = gateStatus(snapshot(useProgress()), 'lab3d-procedure')
   const selectedId = useLab((s) => s.selectedId)
   const message = useLab((s) => s.message)
   const st = useLab.getState()
@@ -87,6 +90,8 @@ export default function Lab3DPage() {
       )
     ) : mode === 'identify' ? (
       <IdentifyPanel model={model} />
+    ) : !procGate.open ? (
+      <GateNotice status={procGate} activity="Guided disassembly, discharge and reassembly" />
     ) : (
       <ProcedurePanel model={model} />
     )

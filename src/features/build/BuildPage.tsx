@@ -4,12 +4,15 @@ import { BUILD_PROJECTS } from '../../content/buildProjects'
 import { useProgress } from '../../store/progressStore'
 import { Panel, SafetyNotice, Tag } from '../../ui/primitives'
 import { useBuildLab } from './buildStore'
+import { snapshot } from '../../store/progressStore'
+import { gateStatus } from '../../content/academy/gates'
 
 /** Build Your Own Inverter: the eight construction projects (each opens in the circuit laboratory). */
 export default function BuildPage() {
   const visit = useProgress((s) => s.visitModule)
   const done = useProgress((s) => s.completedProjects)
   const suites = useBuildLab((s) => s.suites)
+  const gate = gateStatus(snapshot(useProgress()), 'build')
   useEffect(() => {
     visit('build')
   }, [visit])
@@ -37,6 +40,19 @@ export default function BuildPage() {
           in the Learning Academy, where each one is taught first.
         </p>
       </div>
+      {!gate.open && (
+        <div className="mt-4 rounded-md border border-caution-400/40 bg-caution-400/8 p-3 text-sm text-ink-300" data-testid="build-gate">
+          Construction projects open after you pass {gate.missing.map((m, i) => (
+            <span key={m.id}>
+              {i > 0 && ' and '}
+              <Link to={`/academy/${m.id}`} className="text-signal-300 underline">
+                {m.id} {m.title}
+              </Link>
+            </span>
+          ))}
+          .
+        </div>
+      )}
       <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="project-list">
         {BUILD_PROJECTS.map((p) => {
           const complete = done.includes(p.id)

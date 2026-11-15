@@ -12,9 +12,10 @@ import { MODULES } from '../modules'
 import { SIM_EXPERIMENT_BY_ID } from '../simExperiments'
 import { COMPETENCIES, COURSE_BY_ID, COURSES } from './catalogue'
 import { GLOSSARY, glossaryRefs } from './glossary'
-import { ALL_LESSONS, competencyRecord, courseUnlock, examStatus, lessonDone, markAll, markQuestion, moduleStatus, practicalCredited, quizAvailability, seededOrder } from './logic'
+import { F2_PRACTICAL_EXERCISES, gateStatus } from './gates'
+import { ALL_LESSONS, competencyRecord, courseComplete, courseUnlock, examStatus, lessonDone, markAll, markQuestion, markTask, moduleStatus, practicalCredited, quizAvailability, seededOrder, type TaskResponse } from './logic'
 import { routeOf } from './routes'
-import { DIAGRAM_IDS, type LessonContent, type Question, type ToolLink } from './types'
+import { DIAGRAM_IDS, SOLAR_TABS, type Course, type Evidence, type LessonContent, type PracticalTask, type Question, type ToolLink } from './types'
 
 const published = ALL_LESSONS.filter((x) => x.lesson.content)
 const textOf = (c: LessonContent) =>
@@ -36,6 +37,8 @@ function linkExists(l: ToolLink): boolean {
       return !!SIM_EXPERIMENT_BY_ID[l.exp]
     case 'build':
       return !!BUILD_PROJECT_BY_ID[l.project]
+    case 'solar':
+      return (SOLAR_TABS as readonly string[]).includes(l.tab)
   }
 }
 
@@ -126,7 +129,7 @@ describe('questions, links, diagrams and glossary', () => {
       }
   })
   it('every laboratory link resolves to a real model part, entry, procedure, comparison, exercise, experiment or project', () => {
-    const links = COURSES.flatMap((c) => c.modules.flatMap((m) => [...m.practicals.map((p) => p.link), ...m.lessons.flatMap((l) => (l.content ? [l.content.demo.link, ...l.content.activities] : []))]))
+    const links = COURSES.flatMap((c) => c.modules.flatMap((m) => [...m.practicals.flatMap((p) => (p.link ? [p.link] : [])), ...m.lessons.flatMap((l) => (l.content ? [l.content.demo.link, ...l.content.activities] : []))]))
     expect(links.length).toBeGreaterThan(50)
     expect(links.filter((l) => !linkExists(l)).map((l) => `${l.kind}:${JSON.stringify(l)}`)).toEqual([])
     for (const l of links) expect(routeOf(l).startsWith('/')).toBe(true)
@@ -190,6 +193,26 @@ describe('marking', () => {
 describe('progression, completion and competency', () => {
   const S1 = COURSE_BY_ID.S1
   const at = (p: ProgressData, a: Omit<Attempt, 'id' | 'at' | 'durationMs' | 'answers'> & { at?: number }): ProgressData => ({ ...p, attempts: [{ id: `${p.attempts.length}`, at: a.at ?? 1, durationMs: 1000, answers: {}, kind: a.kind, ref: a.ref, score: a.score, max: a.max }, ...p.attempts] })
+  const satisfy = (p: ProgressData, e: Evidence): ProgressData => {
+    switch (e.kind) {
+      case 'project': return { ...p, completedProjects: [...p.completedProjects, e.id] }
+      case 'exercise': return { ...p, completedExercises: [...p.completedExercises, e.id] }
+      case 'lesson': return { ...p, completedLessons: [...p.completedLessons, e.id] }
+      case 'activity': return { ...p, activities: [...p.activities, { activityId: e.id, at: 1, label: '', level: 'beginner' as const }] }
+      case 'troubleshoot': return at(p, { kind: 'troubleshoot', ref: e.project, score: 1, max: 1 })
+      case 'task': return at(p, { kind: 'practical', ref: e.id, score: 1, max: 1 })
+    }
+  }
+  const completeCourse = (p0: ProgressData, c: Course): ProgressData => {
+    let p = p0
+    for (const m of c.modules) {
+      for (const l of m.lessons) p = at(p, { kind: 'check', ref: l.id, score: 4, max: 4 })
+      if (m.quiz) p = at(p, { kind: 'quiz', ref: m.id, score: 10, max: 10 })
+      if (m.assignment) p = at(p, { kind: 'assignment', ref: m.assignment.id, score: 5, max: 5 })
+      for (const pr of m.practicals) p = satisfy(p, pr.evidence)
+    }
+    return c.exam ? at(p, { kind: 'exam', ref: c.id, score: 20, max: 20 }) : p
+  }
   const passAllLessons = (p: ProgressData) => S1.modules.flatMap((m) => m.lessons).reduce((q, l) => at(q, { kind: 'check', ref: l.id, score: 4, max: 4 }), p)
   const passModules = (p: ProgressData) =>
     S1.modules.reduce((q, m) => at(at(q, { kind: 'quiz', ref: m.id, score: 10, max: 10 }), { kind: 'assignment', ref: m.assignment!.id, score: 5, max: 5 }), p)
@@ -199,11 +222,32 @@ describe('progression, completion and competency', () => {
     return q
   }
 
-  it('S1 is open while its prerequisites are only scheduled (recommended, not locked)', () => {
+  it('S1 is locked until F1 and F2 are passed; scheduled courses stay recommended, never locks', () => {
     const u = courseUnlock(emptyProgress(), S1)
-    expect(u.unlocked).toBe(true)
-    expect(u.missing).toEqual([])
-    expect(u.recommended).toEqual(['P2', 'P3', 'P4'])
+    expect(u.unlocked).toBe(false)
+    expect(u.missing).toEqual(['F1', 'F2'])
+    const done = completeCourse(completeCourse(emptyProgress(), COURSE_BY_ID.F1), COURSE_BY_ID.F2)
+    const v = courseUnlock(done, S1)
+    expect(v.unlocked).toBe(true)
+    expect(v.missing).toEqual([])
+    expect(v.recommended).toEqual(['P2', 'P3', 'P4'])
+  })
+  it('F1 has no prerequisites; F2 requires F1', () => {
+    expect(courseUnlock(emptyProgress(), COURSE_BY_ID.F1).unlocked).toBe(true)
+    expect(courseUnlock(emptyProgress(), COURSE_BY_ID.F2).missing).toEqual(['F1'])
+    expect(courseUnlock(completeCourse(emptyProgress(), COURSE_BY_ID.F1), COURSE_BY_ID.F2).unlocked).toBe(true)
+  })
+  it('F1 and F2 are not complete without their practical assessments and examinations', () => {
+    for (const c of [COURSE_BY_ID.F1, COURSE_BY_ID.F2]) {
+      const full = completeCourse(emptyProgress(), c)
+      expect(courseComplete(full, c), c.id).toBe(true)
+      const noExam = { ...full, attempts: full.attempts.filter((a) => a.kind !== 'exam') }
+      expect(courseComplete(noExam, c), `${c.id} without exam`).toBe(false)
+      const noPractical = { ...full, attempts: full.attempts.filter((a) => a.kind !== 'practical'), completedExercises: [], activities: [] }
+      expect(courseComplete(noPractical, c), `${c.id} without practicals`).toBe(false)
+      const failedExam = { ...noExam, attempts: [...noExam.attempts, { id: 'x', kind: 'exam' as const, ref: c.id, score: Math.ceil(c.exam!.pass * 20) - 1, max: 20, at: 1, durationMs: 1, answers: {} }] }
+      expect(courseComplete(failedExam, c), `${c.id} with a failed exam`).toBe(false)
+    }
   })
   it('a lesson is complete only when its knowledge check is passed (≥ 70 %), not by visiting', () => {
     const l = S1.modules[0].lessons[0]
@@ -260,8 +304,10 @@ describe('progression, completion and competency', () => {
     expect(level(p)).toBe('applied')
     p = at(p, { kind: 'exam', ref: 'S1', score: 18, max: 20 })
     expect(level(p)).toBe('virtual-competency')
-    // Scheduled courses' competencies are reported as not yet available.
-    expect(competencyRecord(p).find((c) => c.id === 'CU-01')!.available).toBe(false)
+    // Scheduled courses' competencies are reported as not yet available; published ones are.
+    expect(competencyRecord(p).find((c) => c.id === 'CU-03')!.available).toBe(false)
+    expect(competencyRecord(p).find((c) => c.id === 'CU-01')!.available).toBe(true)
+    expect(competencyRecord(p).find((c) => c.id === 'CU-15')).toBeDefined()
   })
 })
 
@@ -275,5 +321,147 @@ describe('records', () => {
     expect(old.enrolments).toEqual([])
     expect(old.attempts).toEqual([])
     expect(old.completedLessons).toEqual(['ckt-01'])
+  })
+})
+
+describe('practical tasks and gates (Phase 7)', () => {
+  const tasks = COURSES.flatMap((c) => c.modules.flatMap((m) => m.practicals.flatMap((p) => (p.task ? [{ c, m, p, t: p.task }] : []))))
+
+  it('every practical has a laboratory link or an academy task, and task evidence matches its task', () => {
+    for (const c of COURSES) for (const m of c.modules) for (const p of m.practicals) {
+      expect(!!p.link || !!p.task, p.id).toBe(true)
+      if (p.task) expect(p.evidence, p.id).toEqual({ kind: 'task', id: p.task.id })
+    }
+    expect(new Set(tasks.map((x) => x.t.id)).size).toBe(tasks.length)
+    expect(tasks.length).toBeGreaterThanOrEqual(7)
+  })
+
+  it('tasks are well formed', () => {
+    for (const { t } of tasks) {
+      expect(t.title && t.brief && t.explain, t.id).toBeTruthy()
+      if (t.kind === 'sequence') {
+        expect(t.steps.length, t.id).toBeGreaterThanOrEqual(4)
+        expect(t.distractors.length, t.id).toBeGreaterThanOrEqual(2)
+        for (const d of t.distractors) expect(t.steps.includes(d.text), t.id).toBe(false)
+      }
+      if (t.kind === 'hazards') {
+        expect(t.items.some((i) => i.hazard) && t.items.some((i) => !i.hazard), t.id).toBe(true)
+        expect(new Set(t.items.map((i) => i.id)).size).toBe(t.items.length)
+      }
+      if (t.kind === 'procedure') {
+        const ids = new Set(t.actions.map((a) => a.id))
+        for (const r of t.required) {
+          expect(ids.has(r), `${t.id} ${r}`).toBe(true)
+          expect(t.actions.find((a) => a.id === r)!.unsafe, `${t.id} ${r} required but unsafe`).toBeUndefined()
+        }
+        expect(t.actions.some((a) => a.unsafe), t.id).toBe(true)
+        expect(t.conclusion.answer).toBeLessThan(t.conclusion.options.length)
+      }
+      if (t.kind === 'calc') for (const q of t.questions) expect(questionValid(q), `${t.id} ${q.id}`).toBeNull()
+    }
+  })
+
+  const perfect = (t: PracticalTask): TaskResponse => {
+    if (t.kind === 'sequence') return { kind: 'sequence', chosen: [...t.steps] }
+    if (t.kind === 'hazards') return { kind: 'hazards', selected: t.items.filter((i) => i.hazard).map((i) => i.id) }
+    if (t.kind === 'procedure') return { kind: 'procedure', log: [...t.required], conclusion: t.conclusion.answer }
+    return { kind: 'calc', answers: Object.fromEntries(t.questions.map((q) => [q.id, q.type === 'numeric' ? q.answer : q.type === 'multi' ? q.answers : q.answer])) }
+  }
+
+  it('a perfect response passes every task with full marks', () => {
+    for (const { t } of tasks) {
+      const m = markTask(t, perfect(t))
+      expect(m.passed, t.id).toBe(true)
+      expect(m.score, t.id).toBe(m.max)
+    }
+  })
+
+  it('sequence tasks fail on a distractor, a missing step or the wrong order', () => {
+    const t = tasks.find((x) => x.t.kind === 'sequence')!.t as Extract<PracticalTask, { kind: 'sequence' }>
+    expect(markTask(t, { kind: 'sequence', chosen: [...t.steps, t.distractors[0].text] }).passed).toBe(false)
+    expect(markTask(t, { kind: 'sequence', chosen: t.steps.slice(1) }).passed).toBe(false)
+    const swapped = [...t.steps]
+    ;[swapped[0], swapped[1]] = [swapped[1], swapped[0]]
+    const m = markTask(t, { kind: 'sequence', chosen: swapped })
+    expect(m.passed).toBe(false)
+    expect(m.score).toBeLessThan(m.max)
+    expect(m.feedback.join(' ')).toMatch(/order/)
+  })
+
+  it('hazard tasks require exactly the hazards', () => {
+    const t = tasks.find((x) => x.t.kind === 'hazards')!.t as Extract<PracticalTask, { kind: 'hazards' }>
+    const hz = t.items.filter((i) => i.hazard).map((i) => i.id)
+    const safe = t.items.find((i) => !i.hazard)!.id
+    expect(markTask(t, { kind: 'hazards', selected: hz.slice(1) }).passed).toBe(false)
+    expect(markTask(t, { kind: 'hazards', selected: [...hz, safe] }).passed).toBe(false)
+  })
+
+  it('the prove-dead drill fails on an unsafe action, a skipped re-test or the wrong conclusion', () => {
+    const t = tasks.find((x) => x.t.id === 'f1-prove-dead')!.t as Extract<PracticalTask, { kind: 'procedure' }>
+    const unsafe = t.actions.find((a) => a.unsafe)!.id
+    const u = markTask(t, { kind: 'procedure', log: [...t.required, unsafe], conclusion: t.conclusion.answer })
+    expect(u.passed).toBe(false)
+    expect(u.score).toBe(0)
+    expect(markTask(t, { kind: 'procedure', log: t.required.slice(0, -1), conclusion: t.conclusion.answer }).passed).toBe(false)
+    expect(markTask(t, { kind: 'procedure', log: [...t.required], conclusion: 0 }).passed).toBe(false)
+    // Extra harmless actions (the non-contact detector) do not fail a correct sequence.
+    expect(markTask(t, { kind: 'procedure', log: ['ncv', ...t.required], conclusion: t.conclusion.answer }).passed).toBe(true)
+  })
+
+  it('calculation tasks need every answer correct', () => {
+    const t = tasks.find((x) => x.t.kind === 'calc')!.t as Extract<PracticalTask, { kind: 'calc' }>
+    const r = perfect(t) as Extract<TaskResponse, { kind: 'calc' }>
+    const q = t.questions[0]
+    expect(markTask(t, { kind: 'calc', answers: { ...r.answers, [q.id]: q.type === 'numeric' ? q.answer * 2 + 1 : -1 } }).passed).toBe(false)
+  })
+
+  it('gates: F1 opens 3D procedures and F2’s own exercises; F1 + F2 open construction, build and solar', () => {
+    const at = (p: ProgressData, a: Pick<Attempt, 'kind' | 'ref' | 'score' | 'max'>): ProgressData => ({ ...p, attempts: [{ id: `${p.attempts.length}`, at: 1, durationMs: 1, answers: {}, ...a }, ...p.attempts] })
+    const complete = (p0: ProgressData, c: Course) => {
+      let p = p0
+      for (const m of c.modules) {
+        for (const l of m.lessons) p = at(p, { kind: 'check', ref: l.id, score: 4, max: 4 })
+        p = at(at(p, { kind: 'quiz', ref: m.id, score: 1, max: 1 }), { kind: 'assignment', ref: m.assignment!.id, score: 1, max: 1 })
+        for (const pr of m.practicals) {
+          const e = pr.evidence
+          if (e.kind === 'task') p = at(p, { kind: 'practical', ref: e.id, score: 1, max: 1 })
+          if (e.kind === 'exercise') p = { ...p, completedExercises: [...p.completedExercises, e.id] }
+          if (e.kind === 'activity') p = { ...p, activities: [...p.activities, { activityId: e.id, at: 1, label: '', level: 'beginner' }] }
+        }
+      }
+      return at(p, { kind: 'exam', ref: c.id, score: 20, max: 20 })
+    }
+    const none = emptyProgress()
+    for (const area of ['circuit', 'build', 'solar', 'lab3d-procedure'] as const) expect(gateStatus(none, area).open, area).toBe(false)
+    expect(gateStatus(none, 'circuit', 'ckt-01').missing.map((m) => m.id)).toEqual(['F1'])
+    expect(gateStatus(none, 'build').missing.map((m) => m.id)).toEqual(['F1', 'F2'])
+    const f1 = complete(none, COURSE_BY_ID.F1)
+    expect(gateStatus(f1, 'lab3d-procedure').open).toBe(true)
+    for (const ex of F2_PRACTICAL_EXERCISES) expect(gateStatus(f1, 'circuit', ex).open, ex).toBe(true)
+    expect(gateStatus(f1, 'circuit', 'ckt-04').open).toBe(false)
+    expect(gateStatus(f1, 'circuit').open).toBe(false)
+    expect(gateStatus(f1, 'build').missing.map((m) => m.id)).toEqual(['F2'])
+    expect(gateStatus(f1, 'solar').open).toBe(false)
+    const both = complete(f1, COURSE_BY_ID.F2)
+    for (const area of ['circuit', 'build', 'solar', 'lab3d-procedure'] as const) expect(gateStatus(both, area).open, area).toBe(true)
+  })
+
+  it('F2’s laboratory practicals are exactly the exercises its gate exempts', () => {
+    const refs = COURSE_BY_ID.F2.modules.flatMap((m) => m.practicals.map((p) => p.evidence)).flatMap((e) => (e.kind === 'exercise' ? [e.id] : e.kind === 'activity' ? [e.id.replace(/^sim:/, '')] : []))
+    expect([...refs].sort()).toEqual([...F2_PRACTICAL_EXERCISES].sort())
+  })
+
+  it('the course order is unchanged and F1/F2 are published with mandatory pass marks', () => {
+    expect(COURSES.map((c) => c.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'P1', 'P2', 'P3', 'P4', 'P5', 'S1', 'S2', 'S3', 'S4', 'S5'])
+    expect(COURSE_BY_ID.F1.status).toBe('published')
+    expect(COURSE_BY_ID.F2.status).toBe('published')
+    expect(COURSE_BY_ID.F1.exam!.pass).toBe(0.8)
+    expect(COURSE_BY_ID.F1.exam!.questions.length).toBe(20)
+    expect(COURSE_BY_ID.F2.exam!.questions.length).toBe(20)
+    expect(COURSE_BY_ID.F2.prerequisites).toEqual(['F1'])
+    expect(COURSE_BY_ID.F1.modules.flatMap((m) => m.lessons).length).toBe(12)
+    expect(COURSE_BY_ID.F2.modules.flatMap((m) => m.lessons).length).toBe(14)
+    for (const c of COURSES) expect(c.phase, c.id).toBeLessThanOrEqual(14)
+    for (const c of COURSES) for (const r of c.recommended ?? []) expect(COURSE_BY_ID[r], `${c.id} recommends ${r}`).toBeDefined()
   })
 })

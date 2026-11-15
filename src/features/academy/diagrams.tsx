@@ -7,71 +7,12 @@ import { calculate } from '../../engine/design/calc'
 import { generateProject } from '../../engine/design/generate'
 import { quasiSquareCrest, quasiSquareTHD } from '../../engine/design/testing'
 import { PartGlyph } from '../circuit-lab/PartGlyph'
+import { Arrow, Axis, Box, Chain, Svg, Trace, dim, txt } from './diagramKit'
+import { plot } from './plot'
+import { BatteryModel, BodyCurrent, CircuitLoop, DiodeLed, FaultLoop, IsolationFlow, Kirchhoff, Rcd, RcCurve, RiskHierarchy, RlCurve, SeriesParallel, SiScale, VoltageDrop } from './diagramsF'
+import { ChargeStages, DesignChain, EnergyBalance, IvFamily, MpptPwm, PvCell, StringConfig, SystemTypes } from './diagramsS'
 
 /** Lesson diagrams. Waveforms and responses are computed from the same formulas the engine uses. */
-const W = 640
-const txt = 'fill-ink-300 text-[11px]'
-const dim = 'fill-ink-500 text-[10px]'
-
-function Box({ x, y, w = 92, h = 34, label, sub, tone = 'n' }: { x: number; y: number; w?: number; h?: number; label: string; sub?: string; tone?: 'n' | 'p' | 's' | 'd' | 'c' }) {
-  const cls = { n: 'fill-chassis-800 stroke-chassis-500', p: 'fill-live-400/10 stroke-live-400', s: 'fill-signal-500/10 stroke-signal-400', d: 'fill-danger-400/10 stroke-danger-400', c: 'fill-caution-400/10 stroke-caution-400' }[tone]
-  return (
-    <g>
-      <rect x={x} y={y} width={w} height={h} rx={5} className={cls} strokeWidth={1.2} />
-      <text x={x + w / 2} y={y + (sub ? h / 2 - 2 : h / 2 + 4)} textAnchor="middle" className="fill-ink-100 text-[11px] font-medium">
-        {label}
-      </text>
-      {sub && (
-        <text x={x + w / 2} y={y + h / 2 + 11} textAnchor="middle" className={dim}>
-          {sub}
-        </text>
-      )}
-    </g>
-  )
-}
-const Arrow = ({ x1, y1, x2, y2, thick, cls = 'stroke-ink-400' }: { x1: number; y1: number; x2: number; y2: number; thick?: boolean; cls?: string }) => (
-  <line x1={x1} y1={y1} x2={x2} y2={y2} className={cls} strokeWidth={thick ? 2.6 : 1.3} markerEnd="url(#ac-arrow)" />
-)
-const Defs = () => (
-  <defs>
-    <marker id="ac-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0L10 5L0 10z" className="fill-ink-400" />
-    </marker>
-  </defs>
-)
-function Svg({ h, children, label }: { h: number; children: ReactNode; label: string }) {
-  return (
-    <svg viewBox={`0 0 ${W} ${h}`} className="h-auto w-full" role="img" aria-label={label}>
-      <Defs />
-      {children}
-    </svg>
-  )
-}
-
-/** Polyline of a function sampled over [0,1] into a rectangle. */
-function plot(f: (t: number) => number, x: number, y: number, w: number, h: number, lo: number, hi: number, n = 400) {
-  let d = ''
-  for (let i = 0; i <= n; i++) {
-    const t = i / n
-    const v = f(t)
-    const px = x + t * w
-    const py = y + h - ((v - lo) / (hi - lo)) * h
-    d += `${i ? 'L' : 'M'}${px.toFixed(1)} ${py.toFixed(1)}`
-  }
-  return d
-}
-function Trace({ d, cls }: { d: string; cls: string }) {
-  return <path d={d} fill="none" className={cls} strokeWidth={1.5} />
-}
-const Axis = ({ x, y, w, label }: { x: number; y: number; w: number; label: string }) => (
-  <g>
-    <line x1={x} y1={y} x2={x + w} y2={y} className="stroke-chassis-600" strokeWidth={1} />
-    <text x={x - 6} y={y + 4} textAnchor="end" className={dim}>
-      {label}
-    </text>
-  </g>
-)
-
 const tri = (t: number) => {
   const p = t - Math.floor(t)
   return p < 0.5 ? 4 * p - 1 : 3 - 4 * p
@@ -307,29 +248,6 @@ function HBridgeStates() {
       {cell(160, '−V_dc: Q3 + Q2', [3, 2], 'M270 34V95H190V166', 'stroke-live-400', 'current B → A')}
       {cell(320, 'Zero: Q2 + Q4', [2, 4], 'M350 95V166H430V95', 'stroke-signal-300', 'load shorted (freewheel)')}
       {cell(480, 'FORBIDDEN: Q1 + Q2', [1, 2], 'M510 34V166', 'stroke-danger-400', 'shoot-through: bus short')}
-    </Svg>
-  )
-}
-
-function Chain({ items, h = 110, label, note }: { items: { l: string; s?: string; t?: 'n' | 'p' | 's' | 'd' | 'c' }[]; h?: number; label: string; note?: string }) {
-  const n = items.length
-  const bw = Math.min(96, (W - 20 - (n - 1) * 12) / n)
-  return (
-    <Svg h={h} label={label}>
-      {items.map((it, i) => {
-        const x = 10 + i * (bw + 12)
-        return (
-          <g key={i}>
-            <Box x={x} y={30} w={bw} h={40} label={it.l} sub={it.s} tone={it.t} />
-            {i < n - 1 && <Arrow x1={x + bw} y1={50} x2={x + bw + 11} y2={50} thick />}
-          </g>
-        )
-      })}
-      {note && (
-        <text x={10} y={h - 10} className={dim}>
-          {note}
-        </text>
-      )}
     </Svg>
   )
 }
@@ -686,6 +604,28 @@ const DIAGRAMS: Record<Exclude<DiagramId, `schematic:${string}`>, () => ReactNod
   'protection-chain': ProtectionChain,
   'test-bench': TestBench,
   'fault-method': FaultMethod,
+  'body-current': BodyCurrent,
+  'circuit-loop': CircuitLoop,
+  'isolation-flow': IsolationFlow,
+  rcd: Rcd,
+  'fault-loop': FaultLoop,
+  'risk-hierarchy': RiskHierarchy,
+  'series-parallel': SeriesParallel,
+  kirchhoff: Kirchhoff,
+  'rc-curve': RcCurve,
+  'rl-curve': RlCurve,
+  'battery-model': BatteryModel,
+  'voltage-drop': VoltageDrop,
+  'diode-led': DiodeLed,
+  'si-scale': SiScale,
+  'pv-cell': PvCell,
+  'iv-family': IvFamily,
+  'string-config': StringConfig,
+  'mppt-pwm': MpptPwm,
+  'charge-stages': ChargeStages,
+  'design-chain': DesignChain,
+  'energy-balance': EnergyBalance,
+  'system-types': SystemTypes,
 }
 
 export function Diagram({ id }: { id: DiagramId }) {

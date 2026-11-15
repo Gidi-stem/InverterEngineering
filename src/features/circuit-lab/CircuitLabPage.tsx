@@ -8,7 +8,7 @@ import { PART_DEFS } from '../../engine/circuit/parts'
 import { nodeOfTerminal } from '../../engine/circuit/topology'
 import type { CircuitDoc, ExerciseResult, PartType, TerminalRef } from '../../engine/circuit/types'
 import { analyseCircuit } from '../../engine/circuit/validate'
-import { useProgress } from '../../store/progressStore'
+import { snapshot, useProgress } from '../../store/progressStore'
 import { Button, SafetyNotice } from '../../ui/primitives'
 import { modeLabel, nodeVoltageLabels, partVisuals } from './analysis'
 import { ChecksPanel } from './ChecksPanel'
@@ -29,6 +29,8 @@ import { kitRemaining, placeKitPart, starterDoc } from '../../engine/design/kit'
 import { KitToolbox } from '../build/KitToolbox'
 import { ProjectPanel } from '../build/ProjectPanel'
 import { useProject } from '../build/useProject'
+import { gateStatus } from '../../content/academy/gates'
+import { GateNotice } from '../academy/GateNotice'
 
 type Tab = 'exercise' | 'simulate' | 'inspect' | 'checks'
 const EMPTY: CircuitDoc = { version: 1, parts: [], wires: [] }
@@ -45,6 +47,8 @@ export default function CircuitLabPage() {
   const exercise = experiment || project ? null : exId && CIRCUIT_EXERCISE_BY_ID[exId] ? CIRCUIT_EXERCISE_BY_ID[exId] : exId === SANDBOX ? null : CIRCUIT_EXERCISES[0]
   const key = experiment?.id ?? project?.id ?? exercise?.id ?? SANDBOX
   const model = useProject(project?.id ?? null)
+  const progressAll = useProgress()
+  const gate = gateStatus(snapshot(progressAll), project ? 'build' : 'circuit', key)
   const level = useProgress((s) => s.level)
   const projectStarter = useMemo(() => (model ? starterDoc(model.build, level) : null), [model, level])
 
@@ -322,6 +326,9 @@ export default function CircuitLabPage() {
         </label>
       </header>
 
+      {!gate.open ? (
+        <GateNotice status={gate} activity={project ? 'Building an inverter' : experiment ? 'Running a simulation experiment' : 'Circuit construction'} />
+      ) : (
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px] xl:h-[calc(100vh-170px)] xl:min-h-[600px] xl:grid-cols-[200px_minmax(0,1fr)_360px]">
         <aside className="panel h-[128px] overflow-hidden md:col-span-2 xl:col-span-1 xl:h-auto" aria-label="Parts toolbox">
           {model ? (
@@ -665,6 +672,7 @@ export default function CircuitLabPage() {
           </div>
         </aside>
       </div>
+      )}
     </div>
   )
 }

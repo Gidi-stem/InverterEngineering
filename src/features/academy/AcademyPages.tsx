@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { COURSE_BY_ID, COURSES, VIRTUAL_COMPETENCY_NOTE } from '../../content/academy/catalogue'
 import { bestScore, competencyRecord, courseComplete, courseUnlock, evidenceMet, examStatus, lessonDone, LESSON_CHECK_PASS, moduleStatus, practicalCredited, quizAvailability } from '../../content/academy/logic'
+import { TaskRunner } from './TaskRunner'
 import { routeOf } from '../../content/academy/routes'
 import type { AcademyLesson, AcademyModule, Course, Level, Stage } from '../../content/academy/types'
 import { useProgress } from '../../store/progressStore'
@@ -47,6 +48,26 @@ const ScopeNote = () => (
     <strong>Educational programme.</strong> The academy develops knowledge and virtual practical skill. Simulated practice is not a qualification: work on real batteries, inverters, PV arrays and mains installations requires supervised physical training and the qualifications required where you live.
   </SafetyNotice>
 )
+
+/** Lessons, quizzes, assignments, practicals and the examination of a locked course stay closed. */
+function CourseLock({ c, p }: { c: Course; p: ProgressData }) {
+  const u = courseUnlock(p, c)
+  if (u.unlocked) return null
+  return (
+    <div className="panel my-4 space-y-2 p-4" role="alert" data-testid="course-locked">
+      <p className="font-semibold text-ink-100">This course opens when its prerequisite courses are passed.</p>
+      <ul className="space-y-1">
+        {u.missing.map((id) => (
+          <li key={id}>
+            <Link to={`/academy/${id}`} className="text-signal-300 hover:underline">
+              {id} {COURSE_BY_ID[id].title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 function courseProgress(p: ProgressData, c: Course) {
   const lessons = c.modules.flatMap((m) => m.lessons).filter((l) => l.content)
@@ -163,6 +184,7 @@ function CoursePage() {
           )}
         </div>
       )}
+      {c.status === 'published' && <CourseLock c={c} p={p} />}
       {c.status === 'scheduled' ? (
         <div className="mt-5 space-y-3">
           <SafetyNotice>
@@ -246,7 +268,7 @@ function ModuleCard({ c, m, n, p }: { c: Course; m: AcademyModule; n: number; p:
               const credited = practicalCredited(p, m, x)
               return (
                 <li key={x.id}>
-                  <Link to={routeOf(x.link)} className="text-signal-300 hover:underline">
+                  <Link to={x.task ? `/academy/${c.id}/practical/${x.task.id}` : routeOf(x.link!)} className="text-signal-300 hover:underline" data-testid={`practical-link-${x.id}`}>
                     {x.title}
                   </Link>{' '}
                   <span className={credited ? 'text-live-400' : met ? 'text-caution-400' : 'text-ink-500'}>{credited ? '✓' : met ? '(done; credited after the quiz)' : ''}</span>
@@ -285,6 +307,14 @@ function LessonPage() {
   const prev = flat[idx - 1]
   const next = flat[idx + 1]
   if (!l.content) return <Navigate to={`/academy/${c.id}`} replace />
+  if (!courseUnlock(p, c).unlocked)
+    return (
+      <Page>
+        <Crumbs items={[['Learning Academy', '/academy'], [c.id, `/academy/${c.id}`], [l.id, null]]} />
+        <h1 className="text-[24px] font-semibold">{l.title}</h1>
+        <CourseLock c={c} p={p} />
+      </Page>
+    )
   const k = l.content
   const done = lessonDone(p, l)
   return (
@@ -393,7 +423,7 @@ function LessonPage() {
             <li key={a.label}>
               <Link to={routeOf(a)} className="flex min-h-11 items-center justify-between gap-2 rounded-md border border-chassis-600 px-3 text-sm hover:border-chassis-500">
                 <span className="text-ink-200">{a.label}</span>
-                <span className="text-[11px] text-ink-500">{{ lab3d: '3D lab', library: 'Library', procedure: 'Test procedure', compare: 'Comparison', circuit: 'Circuit lab', sim: 'Simulator', build: 'Build lab' }[a.kind]}</span>
+                <span className="text-[11px] text-ink-500">{{ lab3d: '3D lab', library: 'Library', procedure: 'Test procedure', compare: 'Comparison', circuit: 'Circuit lab', sim: 'Simulator', build: 'Build lab', solar: 'Solar lab' }[a.kind]}</span>
               </Link>
             </li>
           ))}
@@ -531,6 +561,12 @@ function QuizPage() {
   if (!c || !m?.quiz) return <Navigate to="/academy" replace />
   const av = quizAvailability(p, m)
   const st = moduleStatus(p, m)
+  if (!courseUnlock(p, c).unlocked)
+    return (
+      <Page>
+        <CourseLock c={c} p={p} />
+      </Page>
+    )
   return (
     <Page>
       <Crumbs items={[['Learning Academy', '/academy'], [c.id, `/academy/${c.id}`], [`${m.title}: quiz`, null]]} />
@@ -573,9 +609,16 @@ function QuizPage() {
 
 function AssignmentPage() {
   const { c, m } = useCourseModule()
+  const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const [open, setOpen] = useState<Record<number, boolean>>({})
   if (!c || !m?.assignment) return <Navigate to="/academy" replace />
+  if (!courseUnlock(p, c).unlocked)
+    return (
+      <Page>
+        <CourseLock c={c} p={p} />
+      </Page>
+    )
   const a = m.assignment
   return (
     <Page>
@@ -621,6 +664,12 @@ function ExamPage() {
     return () => window.clearInterval(t)
   }, [session])
   if (!c?.exam) return <Navigate to="/academy" replace />
+  if (!courseUnlock(p, c).unlocked)
+    return (
+      <Page>
+        <CourseLock c={c} p={p} />
+      </Page>
+    )
   const ex = examStatus(p, c, now)
   const left = session ? Math.max(0, session.deadline - now) : 0
   return (
@@ -679,6 +728,45 @@ function ExamPage() {
           </>
         )}
       </div>
+    </Page>
+  )
+}
+
+function PracticalPage() {
+  const { courseId = '', taskId = '' } = useParams()
+  const c = COURSE_BY_ID[courseId]
+  const p = useData()
+  const recordAttempt = useProgress((s) => s.recordAttempt)
+  const enrol = useProgress((s) => s.enrol)
+  const found = c?.modules.flatMap((m) => m.practicals.map((x) => ({ m, x }))).find(({ x }) => x.task?.id === taskId)
+  if (!c || !found) return <Navigate to={c ? `/academy/${c.id}` : '/academy'} replace />
+  const { m, x } = found
+  const passed = evidenceMet(p, x.evidence)
+  return (
+    <Page>
+      <Crumbs items={[['Learning Academy', '/academy'], [c.id, `/academy/${c.id}`], [`${m.title}: practical`, null]]} />
+      <h1 className="text-[24px] font-semibold">Practical assessment: {x.task!.title}</h1>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        <Tag tone={passed ? 'live' : 'neutral'}>{passed ? 'Passed' : 'Not yet passed'}</Tag>
+        <Tag>{m.title}</Tag>
+      </div>
+      <p className="mt-2 text-sm text-ink-400">{x.description} Practical assessments are marked pass or fail; you may attempt them as often as you need. It is credited to the module once the module quiz is passed.</p>
+      {!courseUnlock(p, c).unlocked ? (
+        <CourseLock c={c} p={p} />
+      ) : (
+        <div className="mt-4">
+          <TaskRunner
+            task={x.task!}
+            onMarked={(mk, answers) => {
+              enrol(c.id)
+              recordAttempt({ kind: 'practical', ref: x.task!.id, score: mk.score, max: mk.max, durationMs: 0, answers })
+            }}
+          />
+        </div>
+      )}
+      <Link to={`/academy/${c.id}`} className="mt-6 inline-block text-sm text-signal-300 hover:underline">
+        ← Back to the course
+      </Link>
     </Page>
   )
 }
@@ -763,6 +851,7 @@ export default function AcademyRouter() {
       <Route path=":courseId/quiz/:moduleId" element={<QuizPage />} />
       <Route path=":courseId/assignment/:moduleId" element={<AssignmentPage />} />
       <Route path=":courseId/exam" element={<ExamPage />} />
+      <Route path=":courseId/practical/:taskId" element={<PracticalPage />} />
       <Route path=":courseId/:lessonId" element={<LessonPage />} />
     </Routes>
   )
