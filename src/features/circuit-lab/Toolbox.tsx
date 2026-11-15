@@ -12,7 +12,7 @@ interface Props {
   onDrop: (t: PartType, cx: number, cy: number) => boolean
 }
 
-const GROUP_ORDER: PartDef['group'][] = ['sources', 'passives', 'semiconductors', 'magnetics', 'protection', 'switching', 'loads', 'reference']
+const GROUP_ORDER: PartDef['group'][] = ['sources', 'passives', 'semiconductors', 'magnetics', 'protection', 'switching', 'sensing', 'loads', 'reference']
 
 /**
  * Part palette. Drag a part onto the workspace, or tap it to arm it and tap the workspace to place

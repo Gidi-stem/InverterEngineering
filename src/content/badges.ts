@@ -55,7 +55,6 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'designer',
-    availableFromPhase: 6,
     title: 'Inverter Designer',
     description: 'Complete one Build Your Own Inverter project.',
     earned: (p) => p.completedProjects.length >= 1,

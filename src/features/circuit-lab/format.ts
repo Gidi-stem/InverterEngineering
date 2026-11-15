@@ -52,7 +52,12 @@ export function partValue(p: PlacedPart): string {
     case 'inductor':
       return eng(v('L') * 1e-3, 'H')
     case 'transformer':
+    case 'transformer-ct':
       return `n = ${v('n')}`
+    case 'vsense':
+      return `set ${v('Vset')} V rms`
+    case 'pv-array':
+      return `${v('Voc')} V · ${v('Isc')} A`
     case 'fuse':
       return `${v('Irated')} A`
     case 'breaker':

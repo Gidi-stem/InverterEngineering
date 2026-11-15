@@ -3,9 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { idbStorage } from './idbStorage'
 import type { SimulationRun } from '../types/domain'
 import type { ModuleId } from '../types/modules'
-import type { ActivityRecord, LearnerLevel, ProgressData } from '../types/progress'
+import type { ActivityRecord, Attempt, LearnerLevel, ProgressData } from '../types/progress'
 import { newId } from './id'
-import { looksLikeBackup, mergeProgress, sanitizeProgress } from './sanitize'
+import { looksLikeBackup, MAX_ATTEMPTS, mergeProgress, sanitizeProgress } from './sanitize'
 
 export const emptyProgress = (): ProgressData => ({
   schemaVersion: 1,
@@ -21,6 +21,8 @@ export const emptyProgress = (): ProgressData => ({
   level: 'beginner',
   inspectedComponents: [],
   activities: [],
+  enrolments: [],
+  attempts: [],
 })
 
 interface ProgressActions {
@@ -38,6 +40,11 @@ interface ProgressActions {
   recordAssessment: (assessmentId: string, score: number, maxScore: number) => void
   /** A practical exercise passed: marks the exercise and its lesson complete. */
   completeExercise: (exerciseId: string) => void
+  /** A build project passed its assessment: marks the project and its lesson complete. */
+  completeProject: (projectId: string) => void
+  /** Learning Academy. */
+  enrol: (courseId: string) => void
+  recordAttempt: (a: Omit<Attempt, 'id' | 'at'>) => Attempt
 }
 
 const ACTION_KEYS = [
@@ -54,6 +61,9 @@ const ACTION_KEYS = [
   'recordActivity',
   'recordAssessment',
   'completeExercise',
+  'completeProject',
+  'enrol',
+  'recordAttempt',
 ] as const
 
 const addUnique = (list: string[], id: string) => (list.includes(id) ? list : [...list, id])
@@ -87,6 +97,13 @@ export const useProgress = create<ProgressState>()(
       recordAssessment: (assessmentId, score, maxScore) =>
         setState((s) => ({ assessments: [...s.assessments, { assessmentId, score, maxScore, at: Date.now() }] })),
       completeExercise: (id) => setState((s) => ({ completedExercises: addUnique(s.completedExercises, id), completedLessons: addUnique(s.completedLessons, id) })),
+      completeProject: (id) => setState((s) => ({ completedProjects: addUnique(s.completedProjects, id), completedLessons: addUnique(s.completedLessons, id) })),
+      enrol: (courseId) => setState((s) => (s.enrolments.some((e) => e.courseId === courseId) ? {} : { enrolments: [...s.enrolments, { courseId, at: Date.now() }] })),
+      recordAttempt: (a) => {
+        const rec: Attempt = { ...a, id: newId(), at: Date.now() }
+        setState((s) => ({ attempts: [rec, ...s.attempts].slice(0, MAX_ATTEMPTS) }))
+        return rec
+      },
     }),
     {
       name: 'inverter-lab-progress',

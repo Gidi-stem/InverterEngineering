@@ -13,6 +13,49 @@ const boxH = { x: -2, y: -1, w: 4, h: 2 }
 const boxV = { x: -1.5, y: -2, w: 3, h: 4 }
 
 export const PART_DEFS: Record<PartType, PartDef> = {
+  'pv-array': {
+    type: 'pv-array',
+    name: 'PV array (simplified)',
+    prefix: 'PV',
+    group: 'sources',
+    componentId: 'solar-input',
+    description:
+      'Photovoltaic array, simplified piecewise-linear model: delivers about I_sc up to 0.8·V_oc, then the current falls linearly to zero at V_oc (maximum power near 0.8·V_oc·I_sc). Phase 7 replaces it with the single-diode model.',
+    terminals: twoPinV(['+', '+'], ['-', '−']),
+    params: [
+      { key: 'Voc', label: 'Open-circuit voltage V_oc', unit: 'V', default: 44, min: 5, max: 1000, step: 0.5 },
+      { key: 'Isc', label: 'Short-circuit current I_sc', unit: 'A', default: 10, min: 0.1, max: 50, step: 0.1 },
+    ],
+    box: boxV,
+  },
+  'transformer-ct': {
+    type: 'transformer-ct',
+    name: 'Centre-tapped transformer',
+    prefix: 'T',
+    group: 'magnetics',
+    componentId: 'transformer',
+    description:
+      'One core with a centre-tapped primary (two equal halves P1–CT and CT–P2) and a secondary: V_s = n·V_half, n = N_s / N_half. Used by push-pull converters: the centre tap goes to the supply, each half is pulled low by its own switch.',
+    terminals: [v('p1', 'P1', -2, -3), v('pc', 'CT', -2, 0), v('p2', 'P2', -2, 3), v('s1', 'S1', 2, -2), v('s2', 'S2', 2, 2)],
+    params: [
+      { key: 'n', label: 'Turns ratio N_s / N_half', unit: '', default: 20, min: 0.1, max: 100, step: 0.1 },
+      { key: 'Rw', label: 'Winding resistance (each)', unit: 'Ω', default: 0.05, min: 0.001, max: 50, step: 0.001 },
+      { key: 'Lm', label: 'Magnetising inductance (per half)', unit: 'H', default: 0.5, min: 0.0001, max: 100, step: 0.0001, simOnly: true },
+    ],
+    box: { x: -2, y: -3, w: 4, h: 6 },
+  },
+  vsense: {
+    type: 'vsense',
+    name: 'Voltage sensor (feedback)',
+    prefix: 'VS',
+    group: 'sensing',
+    componentId: 'voltage-sensor',
+    description:
+      'High-impedance voltage sensor (1 GΩ). It measures the RMS voltage between its terminals each output cycle and feeds it back to every generator in "SPWM reg." mode, which adjusts the modulation index towards the set-point.',
+    terminals: twoPinV(['+', '+'], ['-', '−']),
+    params: [{ key: 'Vset', label: 'Regulation set-point', unit: 'V rms', default: 230, min: 1, max: 400, step: 0.5 }],
+    box: boxV,
+  },
   battery: {
     type: 'battery',
     name: 'Battery',
@@ -58,21 +101,21 @@ export const PART_DEFS: Record<PartType, PartDef> = {
     prefix: 'G',
     group: 'sources',
     description:
-      'Isolated pulse generator and gate driver: OUT is driven to the set voltage above REF when high, and to REF when low (10 Ω output resistance). Static level, PWM (frequency, duty, phase, dead time) or sinusoidal PWM. Connect REF to the switch source/emitter.',
+      'Isolated pulse generator and gate driver: OUT is driven to the set voltage above REF when high, and to REF when low (10 Ω output resistance). Static level, PWM (frequency, duty, phase, dead time), sinusoidal PWM, or regulated SPWM (modulation index set each cycle by the voltage sensor feedback). Connect REF to the switch source/emitter.',
     terminals: twoPinV(['+', 'OUT'], ['-', 'REF']),
     params: [
       { key: 'Vhigh', label: 'High level', unit: 'V', default: 12, min: 3, max: 20, step: 0.5 },
-      { key: 'f', label: 'Frequency (SPWM: carrier)', unit: 'Hz', default: 1000, min: 0.1, max: 100_000, step: 1, when: { state: 'mode', values: [1, 2] }, simOnly: true },
+      { key: 'f', label: 'Frequency (SPWM: carrier)', unit: 'Hz', default: 1000, min: 0.1, max: 100_000, step: 1, when: { state: 'mode', values: [1, 2, 3] }, simOnly: true },
       { key: 'duty', label: 'Duty cycle', unit: '%', default: 50, min: 0, max: 100, step: 1, when: { state: 'mode', values: [1] }, simOnly: true },
       { key: 'phase', label: 'Phase delay', unit: '°', default: 0, min: 0, max: 360, step: 1, when: { state: 'mode', values: [1] }, simOnly: true },
-      { key: 'fm', label: 'Sine (modulating) frequency', unit: 'Hz', default: 50, min: 1, max: 1000, step: 1, when: { state: 'mode', values: [2] }, simOnly: true },
-      { key: 'm', label: 'Modulation index', unit: '', default: 0.9, min: 0, max: 1, step: 0.01, when: { state: 'mode', values: [2] }, simOnly: true },
-      { key: 'td', label: 'Dead time (turn-on delay)', unit: 'µs', default: 0, min: 0, max: 1000, step: 0.1, when: { state: 'mode', values: [1, 2] }, simOnly: true },
+      { key: 'fm', label: 'Sine (modulating) frequency', unit: 'Hz', default: 50, min: 1, max: 1000, step: 1, when: { state: 'mode', values: [2, 3] }, simOnly: true },
+      { key: 'm', label: 'Modulation index (SPWM reg.: starting value)', unit: '', default: 0.9, min: 0, max: 1, step: 0.01, when: { state: 'mode', values: [2, 3] }, simOnly: true },
+      { key: 'td', label: 'Dead time (turn-on delay)', unit: 'µs', default: 0, min: 0, max: 1000, step: 0.1, when: { state: 'mode', values: [1, 2, 3] }, simOnly: true },
     ],
     states: [
-      { key: 'mode', label: 'Mode', options: [{ value: 0, label: 'Static' }, { value: 1, label: 'PWM' }, { value: 2, label: 'SPWM' }], default: 0 },
+      { key: 'mode', label: 'Mode', options: [{ value: 0, label: 'Static' }, { value: 1, label: 'PWM' }, { value: 2, label: 'SPWM' }, { value: 3, label: 'SPWM reg.' }], default: 0 },
       { key: 'level', label: 'Output', options: [{ value: 0, label: 'Low' }, { value: 1, label: 'High' }], default: 0, when: { state: 'mode', values: [0] } },
-      { key: 'invert', label: 'Polarity', options: [{ value: 0, label: 'Normal' }, { value: 1, label: 'Inverted' }], default: 0, when: { state: 'mode', values: [1, 2] } },
+      { key: 'invert', label: 'Polarity', options: [{ value: 0, label: 'Normal' }, { value: 1, label: 'Inverted' }], default: 0, when: { state: 'mode', values: [1, 2, 3] } },
     ],
     box: boxV,
   },
@@ -111,7 +154,7 @@ export const PART_DEFS: Record<PartType, PartDef> = {
     terminals: twoPinH(['+', '+'], ['-', '−']),
     params: [
       { key: 'C', label: 'Capacitance', unit: 'µF', default: 1000, min: 1, max: 100_000, step: 1 },
-      { key: 'Vmax', label: 'Voltage rating', unit: 'V', default: 25, min: 6.3, max: 450, step: 0.1 },
+      { key: 'Vmax', label: 'Voltage rating', unit: 'V', default: 25, min: 6.3, max: 630, step: 0.1 },
     ],
     box: boxH,
   },
@@ -168,7 +211,7 @@ export const PART_DEFS: Record<PartType, PartDef> = {
     params: [
       { key: 'Vth', label: 'Gate threshold (fully on above)', unit: 'V', default: 4, min: 1, max: 10, step: 0.1 },
       { key: 'Ron', label: 'R_DS(on)', unit: 'Ω', default: 0.05, min: 0.001, max: 10, step: 0.001 },
-      { key: 'Imax', label: 'Current rating', unit: 'A', default: 20, min: 0.1, max: 200, step: 0.1 },
+      { key: 'Imax', label: 'Current rating', unit: 'A', default: 20, min: 0.1, max: 600, step: 0.1 },
       { key: 'tsw', label: 'Switching time per edge (typical)', unit: 'ns', default: 50, min: 1, max: 5000, step: 1, simOnly: true },
       { key: 'Rth', label: 'Thermal resistance junction→ambient (with heat sink)', unit: '°C/W', default: 5, min: 0.2, max: 100, step: 0.1, simOnly: true },
     ],
@@ -185,7 +228,7 @@ export const PART_DEFS: Record<PartType, PartDef> = {
     params: [
       { key: 'Vth', label: 'Gate threshold (fully on above)', unit: 'V', default: 7, min: 3, max: 12, step: 0.1 },
       { key: 'Vsat', label: 'V_CE(sat)', unit: 'V', default: 1.6, min: 0.8, max: 3, step: 0.1 },
-      { key: 'Imax', label: 'Current rating', unit: 'A', default: 20, min: 0.1, max: 200, step: 0.1 },
+      { key: 'Imax', label: 'Current rating', unit: 'A', default: 20, min: 0.1, max: 600, step: 0.1 },
       { key: 'tsw', label: 'Switching time per edge (typical)', unit: 'ns', default: 300, min: 1, max: 5000, step: 1, simOnly: true },
       { key: 'Rth', label: 'Thermal resistance junction→ambient (with heat sink)', unit: '°C/W', default: 3, min: 0.2, max: 100, step: 0.1, simOnly: true },
     ],
@@ -228,7 +271,7 @@ export const PART_DEFS: Record<PartType, PartDef> = {
     componentId: 'fuse',
     description: 'Opens permanently if current exceeds its rating. Place it directly at the source positive.',
     terminals: twoPinH(['1', '1'], ['2', '2']),
-    params: [{ key: 'Irated', label: 'Rating', unit: 'A', default: 2, min: 0.05, max: 200, step: 0.05 }],
+    params: [{ key: 'Irated', label: 'Rating', unit: 'A', default: 2, min: 0.05, max: 400, step: 0.05 }],
     box: boxH,
   },
   breaker: {
@@ -293,6 +336,7 @@ export const PART_GROUP_LABEL: Record<PartDef['group'], string> = {
   magnetics: 'Magnetics',
   protection: 'Protection',
   switching: 'Switching',
+  sensing: 'Sensing and feedback',
   loads: 'Loads',
   reference: 'Reference',
 }

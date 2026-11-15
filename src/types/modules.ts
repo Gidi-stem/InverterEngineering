@@ -2,6 +2,7 @@
 
 export type ModuleId =
   | 'dashboard'
+  | 'academy'
   | 'fundamentals'
   | 'lab3d'
   | 'components'
@@ -47,6 +48,7 @@ export interface LearningModule {
 
 export type IconName =
   | 'gauge'
+  | 'academy'
   | 'book'
   | 'cube'
   | 'chip'

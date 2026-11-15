@@ -43,6 +43,8 @@ interface Props {
   onWireFrom: (t: TerminalRef | null) => void
   onReconnect: (wireId: string, end: 'a' | 'b', to: TerminalRef) => void
   onPlace: (x: number, y: number) => void
+  /** Assembly zones of a build project (grid units), drawn under the circuit. */
+  zones?: { x: number; y: number; w: number; h: number; label: string }[]
 }
 
 type View = { x: number; y: number; s: number }
@@ -105,19 +107,20 @@ export function Workspace(props: Props) {
     return [wx / G, wy / G]
   }, [toWorld])
 
+  const zones = props.zones
   const fit = useCallback(() => {
-    if (!doc.parts.length) {
+    const boxes = [...doc.parts.map(partBox), ...(zones ?? []).map((z) => ({ x0: z.x, y0: z.y, x1: z.x + z.w, y1: z.y + z.h }))]
+    if (!boxes.length) {
       setView({ x: -2 * G, y: -2 * G, s: 1 })
       return
     }
-    const boxes = doc.parts.map(partBox)
     const x0 = Math.min(...boxes.map((b) => b.x0)) - 3
     const y0 = Math.min(...boxes.map((b) => b.y0)) - 3
     const x1 = Math.max(...boxes.map((b) => b.x1)) + 5
     const y1 = Math.max(...boxes.map((b) => b.y1)) + 3
     const s = Math.min(2, Math.max(0.35, Math.min(size.w / ((x1 - x0) * G), size.h / ((y1 - y0) * G))))
     setView({ x: ((x0 + x1) / 2) * G - size.w / s / 2, y: ((y0 + y1) / 2) * G - size.h / s / 2, s })
-  }, [doc.parts, size])
+  }, [doc.parts, size, zones])
 
   const zoomAt = useCallback((factor: number, cx?: number, cy?: number) => {
     setView((v) => {
@@ -319,6 +322,18 @@ export function Workspace(props: Props) {
       </defs>
       <rect x={gx0} y={gy0} width={size.w / view.s + 2 * G} height={size.h / view.s + 2 * G} fill="url(#ckt-grid)" />
       <rect x={Math.floor(view.x / (5 * G)) * 5 * G} y={Math.floor(view.y / (5 * G)) * 5 * G} width={size.w / view.s + 10 * G} height={size.h / view.s + 10 * G} fill="url(#ckt-grid5)" />
+
+      {/* Assembly zones (build projects) */}
+      {zones?.map((z, i) => (
+        <g key={i} className="pointer-events-none" data-testid="assembly-zone">
+          <rect x={z.x * G} y={z.y * G} width={z.w * G} height={z.h * G} rx={8} className="fill-signal-500/[0.04] stroke-chassis-600" strokeWidth={1} strokeDasharray="6 4" />
+          {z.label && (
+            <text x={z.x * G + 8} y={z.y * G + 16} className="fill-ink-500 text-[11px] font-medium tracking-wide uppercase">
+              {z.label}
+            </text>
+          )}
+        </g>
+      ))}
 
       {/* Wires */}
       {doc.wires.map((w) => {

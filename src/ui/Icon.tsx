@@ -2,6 +2,7 @@ import type { IconName } from '../types/modules'
 
 const PATHS: Record<IconName, string> = {
   gauge: 'M4 15a8 8 0 1 1 16 0 M12 15l4-5 M7 15h.01 M17 15h.01 M12 7v.01',
+  academy: 'M2 9l10-5 10 5-10 5-10-5z M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5 M22 9v6',
   book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z M8 7h7 M8 11h5',
   cube: 'M12 2l9 5v10l-9 5-9-5V7l9-5z M12 22V12 M21 7l-9 5-9-5',
   chip: 'M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4',

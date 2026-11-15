@@ -21,6 +21,26 @@ export interface ActivityRecord {
   maxScore?: number
 }
 
+/** Learning Academy: one marked attempt at a knowledge check, quiz, assignment, examination or troubleshooting task. */
+export type AttemptKind = 'check' | 'quiz' | 'assignment' | 'exam' | 'troubleshoot'
+export interface Attempt {
+  id: string
+  kind: AttemptKind
+  /** Lesson id (check, assignment), module id (quiz, assignment), course id (exam) or project id (troubleshoot). */
+  ref: string
+  score: number
+  max: number
+  at: number
+  durationMs: number
+  /** Question id → answer given (option index, indices, or a number). */
+  answers: Record<string, number | number[] | null>
+}
+
+export interface Enrolment {
+  courseId: string
+  at: number
+}
+
 export interface ProgressData {
   schemaVersion: 1
   createdAt: number
@@ -39,6 +59,9 @@ export interface ProgressData {
   inspectedComponents: string[]
   /** Completed practical activities, newest first. */
   activities: ActivityRecord[]
+  /** Learning Academy enrolments and marked attempts (newest first). */
+  enrolments: Enrolment[]
+  attempts: Attempt[]
 }
 
 export interface Badge {

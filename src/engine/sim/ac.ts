@@ -102,6 +102,37 @@ export function acSweep(doc: CircuitDoc, inputPart: string, outputSignal: string
         case 'IG':
           adm(e.a, e.b, state(e.part) === 'on' ? 1 / e.Rs : 1 / R_OPEN, 0)
           break
+        case 'IS':
+          break
+        case 'X3': {
+          const ca = nv - 1 + e.br
+          const cb = ca + 1
+          const put = (node: number, c: number, v: number) => {
+            const i = col(node)
+            if (i >= 0) real(i, c, v)
+          }
+          put(e.a, ca, 1)
+          put(e.b, ca, -1)
+          put(e.c, cb, 1)
+          put(e.d, cb, -1)
+          for (const c of [ca, cb]) {
+            put(e.s1, c, -1 / e.n)
+            put(e.s2, c, 1 / e.n)
+          }
+          const row = (r: number, node: number, v: number) => {
+            const i = col(node)
+            if (i >= 0) real(r, i, v)
+          }
+          row(ca, e.a, 1)
+          row(ca, e.b, -1)
+          row(ca, e.c, -1)
+          row(ca, e.d, 1)
+          row(cb, e.s1, 1)
+          row(cb, e.s2, -1)
+          row(cb, e.a, -e.n)
+          row(cb, e.b, e.n)
+          break
+        }
         case 'X': {
           const c = nv - 1 + e.br
           const put = (node: number, v: number) => {

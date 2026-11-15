@@ -31,8 +31,13 @@ export function sanitizeProgress(raw: unknown, fallbackCreatedAt = Date.now()): 
     level: o.level === 'intermediate' || o.level === 'advanced' ? o.level : 'beginner',
     inspectedComponents: strings(o.inspectedComponents),
     activities: objects(o.activities, (a) => typeof a.activityId === 'string' && num(a.at) && typeof a.label === 'string'),
+    enrolments: objects<{ courseId: string; at: number }>(o.enrolments, (e) => typeof e.courseId === 'string' && num(e.at)).filter((e, i, all) => all.findIndex((x) => x.courseId === e.courseId) === i),
+    attempts: objects<ProgressData['attempts'][number]>(o.attempts, (a) => typeof a.id === 'string' && ATTEMPT_KINDS.includes(a.kind as string) && typeof a.ref === 'string' && num(a.score) && num(a.max) && num(a.at) && num(a.durationMs) && !!a.answers && typeof a.answers === 'object' && !Array.isArray(a.answers)).slice(0, MAX_ATTEMPTS),
   }
 }
+
+const ATTEMPT_KINDS = ['check', 'quiz', 'assignment', 'exam', 'troubleshoot']
+export const MAX_ATTEMPTS = 1000
 
 /** Identifies a backup file: must declare schema v1 and be an object. */
 export function looksLikeBackup(raw: unknown): boolean {
@@ -65,6 +70,8 @@ export function mergeProgress(stored: ProgressData, early: ProgressData): Progre
     diagnoses: byKey(stored.diagnoses, early.diagnoses, (d) => `${d.scenarioId}|${d.at}`),
     simulationRuns: byKey(early.simulationRuns, stored.simulationRuns, (r) => r.id),
     activities: byKey(early.activities, stored.activities, (a) => `${a.activityId}|${a.at}`),
+    enrolments: byKey(stored.enrolments, early.enrolments, (e) => e.courseId),
+    attempts: byKey(early.attempts, stored.attempts, (a) => a.id),
     moduleVisits: visits,
   }
 }

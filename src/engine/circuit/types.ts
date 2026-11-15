@@ -5,6 +5,9 @@
  */
 
 export type PartType =
+  | 'pv-array'
+  | 'transformer-ct'
+  | 'vsense'
   | 'battery'
   | 'dc-supply'
   | 'ac-source'
@@ -59,7 +62,7 @@ export interface StateDef {
   when?: { state: string; values: number[] }
 }
 
-export type PartGroup = 'sources' | 'passives' | 'semiconductors' | 'magnetics' | 'protection' | 'switching' | 'loads' | 'reference'
+export type PartGroup = 'sources' | 'passives' | 'semiconductors' | 'magnetics' | 'protection' | 'switching' | 'sensing' | 'loads' | 'reference'
 
 export interface PartDef {
   type: PartType

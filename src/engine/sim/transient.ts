@@ -1,6 +1,6 @@
 import { param } from '../circuit/parts'
 import type { CircuitDoc } from '../circuit/types'
-import { luSolve } from './linalg'
+import { luApply, luFactor, type LuFactors } from './linalg'
 import { compile, R_OPEN, signalsOf, type El, type Netlist, type SignalDef } from './netlist'
 import { acValue, generatorHigh } from './sources'
 
@@ -74,7 +74,7 @@ export function autoStep(doc: CircuitDoc): number {
     if (p.type === 'gate-source') {
       const mode = p.states.mode ?? 0
       if (mode === 1) h = Math.min(h, 1 / (200 * param(p, 'f')))
-      if (mode === 2) h = Math.min(h, 1 / (100 * param(p, 'f')), 1 / (400 * param(p, 'fm')))
+      if (mode === 2 || mode === 3) h = Math.min(h, 1 / (100 * param(p, 'f')), 1 / (400 * param(p, 'fm')))
     }
   }
   // Round to a "nice" value so periods divide into whole steps where possible.
@@ -103,10 +103,25 @@ export class TransientSim {
   private relayOn = new Map<string, boolean>()
   private fuseHeat = new Map<string, number>()
   private blown = new Set<string>()
+  /** Simulated time at which each fuse blew / breaker tripped. */
+  tripAt: Record<string, number> = {}
   private tripped = new Set<string>()
   private eAbs: Float64Array
   private leak = 0
   private losses = new Map<string, SwitchLoss>()
+  /**
+   * LU factors keyed by (method, h, device states). Between switching events the MNA matrix is
+   * constant, so a step costs one O(n²) substitution instead of an O(n³) factorisation.
+   */
+  private luCache = new Map<string, LuFactors | null>()
+  private dummyA = new Float64Array(0)
+  /** Output-voltage regulator (generators in "SPWM reg." mode + a voltage sensor). */
+  regM = 0.9
+  private reg: { plus: number; minus: number; vset: number; period: number } | null = null
+  private regAcc = 0
+  private regT = 0
+  private regNext = 0
+  regLast: number | null = null
 
   constructor(net: Netlist, opts: SimOptions = {}) {
     this.net = net
@@ -123,6 +138,44 @@ export class TransientSim {
     net.els.forEach((e, k) => {
       if (e.k === 'SW') this.on[k] = this.ctrlOn(e, this.v) ? 1 : 0
     })
+    this.setupRegulator(true)
+  }
+
+  /** Find regulated generators and the feedback sensor; the regulator acts once per output cycle. */
+  private setupRegulator(initial: boolean) {
+    const gen = this.net.els.find((e): e is Extract<El, { k: 'VS' }> => e.k === 'VS' && e.src.kind === 'gen' && e.src.spec.mode === 3)
+    const sensor = this.net.doc.parts.find((p) => p.type === 'vsense')
+    if (!gen || gen.src.kind !== 'gen') {
+      this.reg = null
+      return
+    }
+    if (initial) this.regM = gen.src.spec.m
+    const period = 1 / gen.src.spec.fm
+    if (!sensor) {
+      this.reg = null
+      return
+    }
+    const nodeOf = (t: string) => this.net.topo.nodeOf.get(`${sensor.id}:${t}`)!
+    this.reg = { plus: nodeOf('+'), minus: nodeOf('-'), vset: param(sensor, 'Vset'), period }
+    if (initial) this.regNext = period
+  }
+
+  /** Integral regulator: once per cycle, scale m by (1 + 0.6·error) towards the set-point. */
+  private regulate(h: number) {
+    const r = this.reg
+    if (!r) return
+    const vs = this.v[r.plus] - this.v[r.minus]
+    this.regAcc += vs * vs * h
+    this.regT += h
+    if (this.t >= this.regNext - h / 2) {
+      const vrms = Math.sqrt(this.regAcc / Math.max(this.regT, 1e-12))
+      this.regLast = vrms
+      const e = (r.vset - vrms) / r.vset
+      this.regM = Math.min(1, Math.max(0.02, this.regM * (1 + 0.6 * Math.max(-0.5, Math.min(0.5, e)))))
+      this.regAcc = 0
+      this.regT = 0
+      this.regNext += r.period
+    }
   }
 
   static fromDoc(doc: CircuitDoc, opts: SimOptions = {}): TransientSim | { error: string } {
@@ -139,8 +192,10 @@ export class TransientSim {
     const next = compile(doc)
     if ('error' in next || next.signature !== this.net.signature || next.els.length !== this.net.els.length) return false
     this.net = next
+    this.luCache.clear()
     this.signals = signalsOf(next)
     this.beLeft = Math.max(this.beLeft, 2)
+    this.setupRegulator(false)
     // A replaced fuse/reset breaker: parameters changed means the student acted; keep trips unless the part changed state.
     return true
   }
@@ -171,7 +226,7 @@ export class TransientSim {
     const s = e.src
     if (s.kind === 'dc') return s.V
     if (s.kind === 'ac') return acValue(s.vrms, s.f, t)
-    return generatorHigh(s.spec, t) ? s.spec.vhigh : 0
+    return generatorHigh(s.spec, t, s.spec.mode === 3 ? this.regM : undefined) ? s.spec.vhigh : 0
   }
 
   // ── One linear solve with the given discrete states ──────────────────────
@@ -181,9 +236,15 @@ export class TransientSim {
     const nv = net.allNodes
     const n = nv - 1 + net.branches
     const col = (node: number) => (node === ref ? -1 : node < ref ? node : node - 1)
-    const A = new Float64Array(n * n)
+    // Reuse the factorised matrix when the device states, method and step are unchanged;
+    // then only the right-hand side (sources, companion history) needs to be stamped.
+    const key = `${method}${h}|${on.join('')}`
+    const cached = this.luCache.get(key)
+    const needA = cached === undefined
+    const A = needA ? new Float64Array(n * n) : this.dummyA
     const b = new Float64Array(n)
     const G = (a: number, c: number, g: number) => {
+      if (!needA) return
       const ia = col(a)
       const ic = col(c)
       if (ia >= 0) A[ia * n + ia] += g
@@ -200,7 +261,7 @@ export class TransientSim {
       if (ia >= 0) b[ia] -= I
       if (ic >= 0) b[ic] += I
     }
-    for (let k = 0; k < nv; k++) if (k !== ref) A[col(k) * n + col(k)] += G_MIN
+    if (needA) for (let k = 0; k < nv; k++) if (k !== ref) A[col(k) * n + col(k)] += G_MIN
     net.els.forEach((e, k) => {
       switch (e.k) {
         case 'R':
@@ -248,7 +309,45 @@ export class TransientSim {
             J(e.a, e.b, -e.Vsat / e.Rs)
           } else G(e.a, e.b, 1 / R_OPEN)
           break
+        case 'IS':
+          J(e.b, e.a, e.I)
+          break
+        case 'X3': {
+          if (!needA) break // transformer coupling has no right-hand-side terms
+          // Unknowns: ia (into a, winding A a→b) and ib (into c, winding B c→d). Ideal coupling:
+          // V_A = V_B = V_s / n and ia + ib + n·is = 0 (ampere-turn balance, magnetising current in L_m).
+          const ca = nv - 1 + e.br
+          const cb = ca + 1
+          const put = (node: number, colI: number, val: number) => {
+            const i = col(node)
+            if (i >= 0) A[i * n + colI] += val
+          }
+          put(e.a, ca, 1)
+          put(e.b, ca, -1)
+          put(e.c, cb, 1)
+          put(e.d, cb, -1)
+          put(e.s1, ca, -1 / e.n)
+          put(e.s1, cb, -1 / e.n)
+          put(e.s2, ca, 1 / e.n)
+          put(e.s2, cb, 1 / e.n)
+          const row = (r: number, node: number, val: number) => {
+            const i = col(node)
+            if (i >= 0) A[r * n + i] += val
+          }
+          // V_A − V_B = 0
+          row(ca, e.a, 1)
+          row(ca, e.b, -1)
+          row(ca, e.c, -1)
+          row(ca, e.d, 1)
+          // V_s − n·V_A = 0
+          row(cb, e.s1, 1)
+          row(cb, e.s2, -1)
+          row(cb, e.a, -e.n)
+          row(cb, e.b, e.n)
+          break
+        }
         case 'X': {
+          if (!needA) break
           const c = nv - 1 + e.br
           const put = (node: number, val: number) => {
             const i = col(node)
@@ -270,8 +369,14 @@ export class TransientSim {
         }
       }
     })
-    const x = luSolve(A, b, n)
-    if (!x) return null
+    let f = cached
+    if (f === undefined) {
+      f = luFactor(A, n)
+      if (this.luCache.size > 64) this.luCache.clear()
+      this.luCache.set(key, f)
+    }
+    if (!f) return null
+    const x = luApply(f, b)
     const v = new Float64Array(nv + net.branches)
     for (let k = 0; k < nv; k++) v[k] = k === ref ? 0 : x[col(k)]
     for (let k = 0; k < net.branches; k++) v[nv + k] = x[nv - 1 + k]
@@ -301,7 +406,10 @@ export class TransientSim {
       case 'IG':
         return on[k] ? (vd - e.Vsat) / e.Rs : vd / R_OPEN
       case 'X':
+      case 'X3':
         return v[this.net.allNodes + e.br]
+      case 'IS':
+        return -e.I
     }
   }
 
@@ -377,7 +485,7 @@ export class TransientSim {
     net.els.forEach((e, k) => {
       const i1 = this.elCurrent(e, k, r.v, h, r.method, r.on, t1)
       const v1 = r.v[e.a] - r.v[e.b]
-      if (e.k === 'X') {
+      if (e.k === 'X' || e.k === 'X3') {
         // Ideal transformer: primary and secondary powers cancel exactly; record the primary branch current.
         this.ve[k] = v1
         this.i[k] = i1
@@ -418,10 +526,12 @@ export class TransientSim {
       this.fuseHeat.set(p.id, heat)
       if (p.type === 'fuse' && heat > FUSE_K * Ir * Ir) {
         this.blown.add(p.id)
+        this.tripAt[p.id] = t1
         this.beLeft = 2
       }
       if (p.type === 'breaker' && (heat > BREAKER_K * Ir * Ir || I > BREAKER_MAG * Ir)) {
         this.tripped.add(p.id)
+        this.tripAt[p.id] = t1
         this.beLeft = 2
       }
     }
@@ -462,6 +572,7 @@ export class TransientSim {
     }
     this.t = target
     this.steps++
+    this.regulate(this.h)
     for (let k = 0; k < this.v.length; k++) {
       const x = this.v[k]
       if (!Number.isFinite(x) || Math.abs(x) > V_LIMIT) {
@@ -526,7 +637,7 @@ export class TransientSim {
     let dissipated = this.leak
     let stored = 0
     this.net.els.forEach((e, k) => {
-      if (e.k === 'VS' || e.k === 'CC') {
+      if (e.k === 'VS' || e.k === 'CC' || e.k === 'IS' || (e.k === 'D' && e.tag === 'pv')) {
         // The element's absorbed energy is −(ideal source energy) + internal resistance loss; report terminal energy.
         delivered -= this.eAbs[k]
       } else if (e.k === 'C') {

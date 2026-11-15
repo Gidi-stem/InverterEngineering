@@ -33,6 +33,13 @@ export function buildTopology(doc: CircuitDoc): Topology {
     const rb = find(b)
     if (ra !== rb) parent.set(ra, rb)
   }
+  // Every ground symbol is the same electrical point (0 V / protective earth).
+  const gk = doc.parts.filter((p) => p.type === 'ground').map((p) => tkey(p.id, 'gnd'))
+  for (let i = 1; i < gk.length; i++) {
+    const ra = find(gk[0])
+    const rb = find(gk[i])
+    if (ra !== rb) parent.set(rb, ra)
+  }
   const idOfRoot = new Map<string, number>()
   const nodes: CircuitNode[] = []
   const nodeOf = new Map<string, number>()
@@ -87,7 +94,14 @@ export function internalPaths(p: PlacedPart): [string, string][] {
         ['in+', 'out+'],
         ['in-', 'out-'],
       ]
+    case 'transformer-ct':
+      return [
+        ['p1', 'pc'],
+        ['pc', 'p2'],
+        ['s1', 's2'],
+      ]
     case 'ground':
+    case 'vsense':
       return []
     default: {
       const t = PART_DEFS[p.type].terminals

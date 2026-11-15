@@ -24,6 +24,11 @@ import { SimBar } from './sim/SimBar'
 import { SimPanel } from './sim/SimPanel'
 import { defaultScope, scopeFromExperiment } from './sim/defaults'
 import { useSimulation, type ScopeSettings } from './sim/useSimulation'
+import { BUILD_PROJECTS, BUILD_PROJECT_BY_ID } from '../../content/buildProjects'
+import { kitRemaining, placeKitPart, starterDoc } from '../../engine/design/kit'
+import { KitToolbox } from '../build/KitToolbox'
+import { ProjectPanel } from '../build/ProjectPanel'
+import { useProject } from '../build/useProject'
 
 type Tab = 'exercise' | 'simulate' | 'inspect' | 'checks'
 const EMPTY: CircuitDoc = { version: 1, parts: [], wires: [] }
@@ -36,8 +41,12 @@ export default function CircuitLabPage() {
   const [params, setParams] = useSearchParams()
   const exId = params.get('ex')
   const experiment = exId ? (SIM_EXPERIMENT_BY_ID[exId] ?? null) : null
-  const exercise = experiment ? null : exId && CIRCUIT_EXERCISE_BY_ID[exId] ? CIRCUIT_EXERCISE_BY_ID[exId] : exId === SANDBOX ? null : CIRCUIT_EXERCISES[0]
-  const key = experiment?.id ?? exercise?.id ?? SANDBOX
+  const project = !experiment && exId ? (BUILD_PROJECT_BY_ID[exId] ?? null) : null
+  const exercise = experiment || project ? null : exId && CIRCUIT_EXERCISE_BY_ID[exId] ? CIRCUIT_EXERCISE_BY_ID[exId] : exId === SANDBOX ? null : CIRCUIT_EXERCISES[0]
+  const key = experiment?.id ?? project?.id ?? exercise?.id ?? SANDBOX
+  const model = useProject(project?.id ?? null)
+  const level = useProgress((s) => s.level)
+  const projectStarter = useMemo(() => (model ? starterDoc(model.build, level) : null), [model, level])
 
   const stored = useCircuitLab((s) => s.docs[key])
   const savedAt = useCircuitLab((s) => s.savedAt[key])
@@ -47,11 +56,11 @@ export default function CircuitLabPage() {
   const commitDoc = useCircuitLab((s) => s.commit)
   const undoLast = useCircuitLab((s) => s.undoLast)
   const restore = useCircuitLab((s) => s.restore)
-  const starter = experiment?.circuit ?? exercise?.starter ?? EMPTY
+  const starter = experiment?.circuit ?? projectStarter ?? exercise?.starter ?? EMPTY
   const doc = stored ?? starter
 
   const completed = useProgress((s) => s.completedExercises)
-  const level = useProgress((s) => s.level)
+  const completedProjects = useProgress((s) => s.completedProjects)
   const visit = useProgress((s) => s.visitModule)
   const completeExercise = useProgress((s) => s.completeExercise)
   const completeLesson = useProgress((s) => s.completeLesson)
@@ -61,6 +70,9 @@ export default function CircuitLabPage() {
   const [selection, setSelection] = useState<Selection>(null)
   const [wireFrom, setWireFrom] = useState<TerminalRef | null>(null)
   const [armed, setArmed] = useState<PartType | null>(null)
+  const [armedKit, setArmedKit] = useState<string | null>(null)
+  const kitLeft = useMemo(() => (model ? kitRemaining(doc, model.build) : []), [doc, model])
+  const armedKitPart = armedKit ? (kitLeft.find((p) => p.id === armedKit) ?? null) : null
   // Panel tab and Build/Simulate mode belong to the workspace: opening another circuit starts from its defaults.
   const [tabState, setTabState] = useState<{ key: string; tab: Tab }>({ key, tab: 'exercise' })
   const tab = tabState.key === key ? tabState.tab : 'exercise'
@@ -170,6 +182,7 @@ export default function CircuitLabPage() {
       } else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey) rotateSelected()
       else if (e.key === 'Escape') {
         setArmed(null)
+        setArmedKit(null)
         setWireFrom(null)
         setSelection(null)
       }
@@ -207,6 +220,7 @@ export default function CircuitLabPage() {
     setSelection(null)
     setWireFrom(null)
     setArmed(null)
+    setArmedKit(null)
     setTab('exercise')
     setConfirmReset(false)
   }
@@ -250,7 +264,9 @@ export default function CircuitLabPage() {
 
   const result = check && check.key === key ? check.result : null
   const stale = !!check && check.key === key && check.json !== JSON.stringify(doc)
-  const hint = armed
+  const hint = armedKitPart
+    ? `Tap the workspace to place ${armedKitPart.id}. Esc cancels.`
+    : armed
     ? `Tap the workspace to place a ${PART_DEFS[armed].name.toLowerCase()}. Esc cancels.`
     : wireFrom
       ? 'Tap another terminal to finish the wire. Tap empty space or press Esc to cancel.'
@@ -293,6 +309,14 @@ export default function CircuitLabPage() {
                 </option>
               ))}
             </optgroup>
+            <optgroup label="Construction projects">
+              {BUILD_PROJECTS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.letter}. {p.title}
+                  {completedProjects.includes(p.id) ? ' ✓' : ''}
+                </option>
+              ))}
+            </optgroup>
             <option value={SANDBOX}>Free build (sandbox)</option>
           </select>
         </label>
@@ -300,6 +324,25 @@ export default function CircuitLabPage() {
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px] xl:h-[calc(100vh-170px)] xl:min-h-[600px] xl:grid-cols-[200px_minmax(0,1fr)_360px]">
         <aside className="panel h-[128px] overflow-hidden md:col-span-2 xl:col-span-1 xl:h-auto" aria-label="Parts toolbox">
+          {model ? (
+            <KitToolbox
+              remaining={kitLeft}
+              total={model.build.doc.parts.length}
+              armed={armedKit}
+              onArm={(id) => {
+                setArmedKit(id)
+                setArmed(null)
+                setWireFrom(null)
+              }}
+              onDrop={(part, cx, cy) => {
+                const g = api.current?.clientToGrid(cx, cy)
+                if (!g) return false
+                commit(placeKitPart(doc, part, g[0], g[1]))
+                setSelection({ kind: 'part', id: part.id })
+                return true
+              }}
+            />
+          ) : (
           <Toolbox
             suggested={exercise?.toolbox ?? null}
             armed={armed}
@@ -314,6 +357,7 @@ export default function CircuitLabPage() {
               return true
             }}
           />
+          )}
         </aside>
 
         <section className="panel relative flex h-[62vh] min-h-[380px] flex-col overflow-hidden xl:h-auto" aria-label="Circuit workspace">
@@ -408,7 +452,8 @@ export default function CircuitLabPage() {
               doc={doc}
               selection={selection}
               wireFrom={wireFrom}
-              armed={armed}
+              armed={armedKitPart?.type ?? armed}
+              zones={model?.build.zones}
               visual={visual}
               highlight={highlight}
               danger={danger}
@@ -436,7 +481,13 @@ export default function CircuitLabPage() {
                 if (r.error) flash(r.error, 'error')
                 else commit(r.doc)
               }}
-              onPlace={(x, y) => armed && place(armed, x, y)}
+              onPlace={(x, y) => {
+                if (armedKitPart) {
+                  commit(placeKitPart(doc, armedKitPart, x, y))
+                  setSelection({ kind: 'part', id: armedKitPart.id })
+                  setArmedKit(null)
+                } else if (armed) place(armed, x, y)
+              }}
             />
             {hazardous && (
               <div className="pointer-events-none absolute inset-x-2 top-2">
@@ -505,7 +556,7 @@ export default function CircuitLabPage() {
           <div role="tablist" aria-label="Side panel" className="flex border-b border-chassis-700">
             {(
               [
-                ['exercise', experiment ? 'Experiment' : exercise ? 'Exercise' : 'Free build'],
+                ['exercise', experiment ? 'Experiment' : project ? 'Project' : exercise ? 'Exercise' : 'Free build'],
                 ['simulate', 'Simulate'],
                 ['inspect', 'Inspect'],
                 ['checks', `Checks${counts.danger + counts.warning ? ` (${counts.danger + counts.warning})` : ''}`],
@@ -561,7 +612,10 @@ export default function CircuitLabPage() {
                 }}
               />
             )}
-            {tab === 'exercise' && !experiment && (
+            {tab === 'exercise' && model && (
+              <ProjectPanel model={model} doc={doc} level={level} dangerCount={counts.danger} onCommit={commit} onFocus={setFocus} flash={flash} />
+            )}
+            {tab === 'exercise' && !experiment && !model && (
               <ExercisePanel
                 exercise={exercise}
                 result={result}

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { BADGES } from '../../content/badges'
@@ -7,6 +7,9 @@ import { snapshot, useProgress } from '../../store/progressStore'
 import { moduleCompletion, summarise } from '../../store/selectors'
 import type { Level } from '../../types/modules'
 import { Icon } from '../../ui/Icon'
+
+/** Lazy: the course content is code-split out of the dashboard bundle. */
+const AcademyBanner = lazy(() => import('../academy/AcademyBanner'))
 import { Meter, Panel, SafetyNotice, Tag } from '../../ui/primitives'
 import { SimulationHistory } from '../progress/SimulationHistory'
 import { WaveformBench } from './WaveformBench'
@@ -61,12 +64,16 @@ export function DashboardPage() {
         </div>
       </div>
 
+      <Suspense fallback={null}>
+        <AcademyBanner data={data} />
+      </Suspense>
+
       <WaveformBench />
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatTile label="Lessons completed" value={`${s.lessons.done}/${s.lessons.total}`} detail="across all modules" frac={s.lessons.done / s.lessons.total} />
         <StatTile label="Practical exercises" value={`${s.exercises.done}/${s.exercises.total}`} detail="Circuit Connection Laboratory" frac={s.exercises.done / s.exercises.total} />
-        <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="Build workshop · from Phase 6" frac={s.projects.done / s.projects.total} />
+        <StatTile label="Engineering projects" value={`${s.projects.done}/${s.projects.total}`} detail="Build Your Own Inverter" frac={s.projects.done / s.projects.total} />
         <StatTile label="Assessment average" value={pct(s.assessments.averagePct)} detail={s.assessments.taken ? `${s.assessments.taken} of ${s.assessments.total} attempted` : 'Assessments · from Phase 10'} />
         <StatTile label="Troubleshooting success" value={pct(s.troubleshooting.ratePct)} detail={s.troubleshooting.attempts ? `${s.troubleshooting.correct} correct of ${s.troubleshooting.attempts}` : 'Repair workshop · from Phase 9'} />
         <StatTile label="Components identified" value={`${s.components.done}/${s.components.total}`} detail={`${s.studied.done} studied in the 3D Lab`} frac={s.components.done / s.components.total} />

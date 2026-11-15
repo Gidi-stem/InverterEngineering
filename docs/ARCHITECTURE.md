@@ -34,7 +34,11 @@ Items marked *(Phase N)* do not exist yet.
 src/
   app/layout/          AppShell: sidebar, mobile drawer, simulation banner, per-route ErrorBoundary
   content/
-    modules.ts         12 sections, 59 lessons (single source for nav, routes, pathway)
+    modules.ts         13 sections incl. the Learning Academy entry (single source for nav, routes, pathway)
+    academy/           Learning Academy (Phase 6), see §10: types, catalogue (15 courses), s1/ (course S1: 6 modules,
+                       20 lessons), glossary, logic (marking, completion, unlock, competency), routes (+ tests)
+    buildProjects.ts   the eight Build Your Own Inverter projects (Phase 6): architecture, roles, options, questions,
+                       troubleshooting faults, safety; suggestSelection
     componentCatalogue.ts   the 24 components (index)
     components/        component database (single source):
                          power.ts, control.ts, protection.ts, io.ts, structural.ts   entries (13 panel fields + levels)
@@ -50,6 +54,9 @@ src/
   engine/circuit/      types, parts (20-part catalogue), topology (union-find nodes), solve (MNA), roles,
                        validate (fault rules), exercises (evaluators), edit (pure editing ops), build (+ tests)
   engine/sim/          netlist, sources, transient (TransientSim), linalg, analysis, ac, record, session (+ tests)
+  engine/design/       Phase 6 design engine, see §9a: calc (explained calculations), compat (compatibility checks),
+                       generate (project circuits, assembly steps, zones, probes), assembly (step verification),
+                       testing (engineering test suite), kit (parts kit, design sync) (+ tests)
   engine/solar/ faults/    (Phases 7, 9)
   store/               progressStore.ts, idbStorage.ts, selectors.ts, sanitize.ts (validate + merge), id.ts (+ tests)
   ui/                  primitives, Icon, ErrorBoundary, symbols/ (IEC schematic symbols for all 24 components)
@@ -72,8 +79,12 @@ src/
     circuit-lab/       CircuitLabPage, Workspace (SVG editor), Toolbox, Inspect/Checks/Exercise panels, PartGlyph,
                        circuitStore (saved circuits + undo), analysis.ts, format.ts (+ tests)
       sim/             sim.worker, protocol, useSimulation, Scope, SimBar, SimPanel, Bode, ExperimentPanel, defaults, scale
-    build/ solar/ instruments/ repair/ assessments/   (Phases 5–10)
-docs/ARCHITECTURE.md, docs/PHASE-2-PLAN.md, docs/PHASE-2-REPORT.md, docs/PHASE-3-REPORT.md
+    build/             BuildPage, ProjectPanel (brief, design, components, assembly, tests, troubleshoot, assessment),
+                       KitToolbox, buildStore, useProject, suite.worker + useSuite, report
+    academy/           AcademyPages (catalogue, course, lesson, quiz, assignment, exam, record), Rich (lesson text +
+                       glossary), QuestionSet, diagrams (17 computed diagrams + schematics), Demos, AcademyBanner
+    solar/ instruments/ repair/ assessments/   (Phases 7–10)
+docs/ARCHITECTURE.md, docs/CURRICULUM-BLUEPRINT.md, docs/PHASE-N-PLAN.md, docs/PHASE-N-REPORT.md
 ```
 
 ## 4. Data models (`src/types/`)
@@ -186,25 +197,80 @@ Model assumptions are displayed beside each result in the UI.
 
 **Experiments.** `content/simExperiments.ts` holds ten experiments. Expected values are independent closed forms computed from the circuit's current parameters; observations are measured from a full run in the worker. The test suite runs every experiment and requires all observations to agree. Completing experiments earns the Inverter Fundamentals lessons (`content/fundamentalsCriteria.ts`, kept engine-free so the app shell stays light).
 
-## 10. Persistence and robustness
+## 9a. Build Your Own Inverter: the design engine (Phase 6)
+
+**Principle: no new tool, no duplicated model.** A build project is a Circuit Lab workspace (`?ex=bld-a…h`). The editor, connection graph, Phase 4 validator, Phase 5 transient engine and Component Library are reused unchanged. Phase 6 adds only:
+
+- the design engine (`engine/design/`);
+- three parts: PV array, centre-tapped transformer, voltage sensor;
+- two netlist primitives (current source IS, three-winding ideal transformer X3);
+- a once-per-cycle RMS regulator for SPWM ("SPWM reg." gate mode);
+- an LU-factor cache in the transient engine.
+
+**Pipeline**, all pure functions of (project, design spec, selection):
+
+1. `calculate` returns every design quantity as an explained item: formula, substituted working, reason, and a calculated/typical-assumption label.
+2. `checkCompatibility` gives pass/warn/fail per role and aspect, citing library typical values. It never invents datasheet figures.
+3. `generateProject` gives the reference circuit with the design's values, assembly zones, assembly steps (connection or series requirements, with text at three learner levels) and probes.
+4. `verifySteps` checks each step on the connection graph. Placement alone never satisfies a step.
+5. `runSuite` runs up to 14 test kinds (no-load, resistive, inductive, overload, short circuit, low/high battery, regulation, efficiency, thermal, waveform, MPPT, grid, generator), each a transient simulation of the student's own circuit changed only by the test condition. Six output cycles are simulated and the last three measured. The suite runs in a dedicated worker.
+
+**Parts kit.** The generated parts carry fixed ids, so steps and fault injections address them.
+
+- Beginners start with every part placed and no wires; intermediate and advanced learners place, rotate and position the parts themselves.
+- `syncToDesign` updates a built circuit when the design or selection changes, remapping terminals when a switch changes type.
+- A test report is "current" only for the exact circuit it ran on.
+
+**Assessment.** The criteria are connections, architecture questions, simulation results, component selection, protection, troubleshooting and final performance. The learner level selects which are required. Completion writes `completedProjects` and the lesson id.
+
+## 10. Learning Academy (Phase 6)
+
+The curriculum and competency framework are specified in `docs/CURRICULUM-BLUEPRINT.md`.
+
+**Content model** (`content/academy/types.ts`):
+
+- course → module → lesson, with a published/scheduled status and the authoring phase;
+- every published lesson has the fourteen sections of the lesson standard;
+- lesson text uses a small markdown subset with glossary links `[[term]]`;
+- lab links are typed (`lab3d`, `library`, `procedure`, `compare`, `circuit`, `sim`, `build`) and built into routes by `routes.ts`;
+- diagrams are ids drawn by `features/academy/diagrams.tsx`, computed from the engine's own formulas, or `schematic:<project>` drawn with the circuit lab's symbols.
+
+**Records.** `ProgressData` gains `enrolments` and `attempts` (kind, ref, score, max, answers, duration). Both are optional in stored data, sanitised on load and import, and merged during hydration, so older backups still import.
+
+**Rules** (`logic.ts`, pure and tested):
+
+- A lesson is complete when its knowledge check reaches 70 %.
+- A module is complete when all its lessons, its quiz, its assignment (≥ 70 %) and its practicals are done. Practicals are read from the laboratories' existing records and credited only after the quiz is passed.
+- Quizzes allow 3 attempts per 24 h, and the best score counts.
+- The examination opens when every module is complete. It is timed, auto-submits when time runs out, allows 3 attempts with a 24 h cool-down, and shows no feedback until submitted.
+- Scheduled prerequisites are "recommended", not locks.
+- Competency levels are derived as awareness → applied → virtual competency.
+
+**Code splitting.** Course content and Academy pages are lazy chunks (244 kB and 78 kB); the dashboard banner is a separate small chunk.
+
+**Tests** enforce the lesson standard and minimum depth. They also check every lab link, diagram id and glossary term, the answer keys and marking, progression, the examination cool-down, competency derivation and record sanitising.
+
+## 11. Persistence and robustness
 
 - Progress is a single `ProgressData` record (schema v1) in IndexedDB under `inverter-lab-progress`, kept in memory if storage is unavailable.
 - `sanitizeProgress` validates every field on rehydration and on backup import, and upgrades older records (fields added in Phase 2 get defaults).
 - `mergeProgress` combines stored data with anything recorded while IndexedDB was still loading (union of lists, latest visit times), so early actions are not lost.
 - `newId` works in non-secure contexts (plain HTTP on a LAN IP).
 - Without WebGL, the 3D lab shows a clear notice; the parts list, information panels and procedures still work.
+- Build-lab state (designs, selections, last test reports) is validated against each project's defaults on load; choice fields accept only their allowed values.
 - Saved circuits pass through `sanitizeDoc` (unknown parts, missing terminals, duplicate ids, non-finite or out-of-range values are dropped or clamped), so a damaged save cannot break the editor.
 
-## 11. Safety design
+## 12. Safety design
 
 - A permanent "Simulation environment" indicator; safety notices on every module.
 - Guided disassembly enforces isolation and a verified discharge before any internal part can be touched, and explains every refused step.
 - Unsafe methods (screwdriver discharge) are refused with the reason, never simulated as valid.
 - Real-world caveats are stated where the model simplifies (dielectric absorption, bleeder failure, datasheet pin orders).
 - Every test procedure begins with isolation (or is explicitly a qualified live measurement), and DC-bus parts require a verified discharge (enforced by tests).
+- Build projects: every mains or HV project carries a "Simulated only" notice, and the configurator states that designs are educational estimates, not certified construction designs. The academy states that simulated practice is not a qualification, and competency records are labelled "virtual competency".
 - Circuit lab: practical exercises start with isolated, current-limited, low-voltage sources. Anything above 50 V DC or 25 V AC (source settings or solved node voltages) raises a hazardous-voltage warning and a "Simulated only" banner; battery short circuits, shoot-through, reverse-polarity electrolytics and over-rated parts are danger-level and block an exercise pass.
 
-## 12. Roadmap
+## 13. Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -213,18 +279,28 @@ Model assumptions are displayed beside each result in the UI.
 | 3 | Searchable component library: catalogue, technical pages, pinouts, provenance-labelled specifications, virtual-instrument test procedures, comparisons, 3D links | **Done** (see PHASE-3-REPORT.md) |
 | 4 | Circuit connection laboratory: schematic editor, 20 part types, connection graph, MNA solver, fault explanations, ten assessed exercises, saving | **Done** (see PHASE-4-REPORT.md) |
 | 5 | Electrical simulation engine: transient MNA, AC analysis, PWM/SPWM, switching, thermal estimate, oscilloscope, ten experiments, Fundamentals lessons | **Done** (see PHASE-5-REPORT.md) |
-| 6 | Build Your Own Inverter (eight projects) | Next |
-| 7 | Solar and hybrid lab | |
-| 8 | Virtual instruments bound to the simulation | |
-| 9 | Repair workshop (17 scenarios) | |
+| 6 | Build Your Own Inverter (eight projects, design engine, test suite) + Learning Academy framework and course S1 | **Done** (see PHASE-6-REPORT.md) |
+| 7 | Solar and hybrid lab + courses S2, P5 | Next (awaiting approval) |
+| 8 | Virtual instruments bound to the simulation + F5, S4.M1 | |
+| 9 | Repair workshop (17 scenarios) + S4 | |
 | 10 | Assessments, projects, final integration | |
+| 11–14 | Proposed curriculum phases (F1–F4, P1–P4, S3, S5): see CURRICULUM-BLUEPRINT.md §8, to be confirmed | |
 
 Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warnings) and `npm run build` pass; every route and control is smoke-tested in a browser (desktop, tablet, 390 px phone, plain-HTTP LAN access) with no console errors from app code; 3D rendering is checked with headless Chromium (SwiftShader WebGL 2); earlier phases are re-checked.
 
-## 13. Known limitations after Phase 5
+## 14. Known limitations after Phase 6
 
-- Six sections still show only their syllabus; their workspaces arrive in the phases above.
-- Two of the ten badges and the project and troubleshooting counters depend on later phases (labelled in the UI).
+- Five sections still show only their syllabus; their workspaces arrive in the phases above.
+- One badge and the troubleshooting counter depend on later phases (labelled in the UI).
+- Learning Academy: only S1 is authored; the other fourteen courses show their syllabus as "scheduled". Written homework and assignment parts are self-reviewed against model answers (not stored or teacher-marked). Records are per browser; there is no teacher or institution account.
+- Build projects use simplified models, all labelled in the UI:
+  - PV array: piecewise-linear, with the MPP at the knee.
+  - Hybrid charger: resistor-limited, delivering about a fifth of the design current.
+  - Transfer relays: driven by static controllers set per test; no detection algorithm.
+  - Push-pull transformer: no leakage spikes.
+  - Electronic overcurrent shut-down: described but not simulated.
+  - Simulated switching frequencies: limited to 5–10 kHz so test suites finish in seconds.
+- Build projects, manual settings: the MPPT duty is set by hand (automatic tracking in Phase 7), and the HV bus of the high-frequency design is unregulated.
 - 3D parts are educational representations built from primitives: proportions and pinouts follow real packages, but surface detail is simplified.
 - In the guided procedure, soldered parts are "removed" individually for inspection; in a real repair, boards are usually replaced as a unit (stated in the instructions).
 - Discharge pulse capacity uses a simplified rated W × 5 s rule. The dashboard waveform bench still shows ideal formula waveforms (labelled); circuit waveforms now come from the transient engine.

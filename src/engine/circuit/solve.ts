@@ -119,6 +119,23 @@ function buildPrims(doc: CircuitDoc, topo: Topology, mode: SimMode, st: DeviceSt
           g('sec', 's1', 's2', param(p, 'Rw'))
         }
         break
+      case 'pv-array': {
+        // Simplified PV: I_sc into + from −, clamped by a knee at 0.8·V_oc that reaches I_sc at V_oc.
+        const voc = param(p, 'Voc')
+        const isc = param(p, 'Isc')
+        prims.push({ k: 'isrc', part: id, tag: 'main', into: N(p, '+'), outOf: N(p, '-'), I: isc })
+        pwl('pv', '+', '-', 0.8 * voc, (0.2 * voc) / isc)
+        break
+      }
+      case 'transformer-ct':
+        // Steady-state view: winding resistances only (coupling is handled by the transient engine).
+        g('main', 'p1', 'pc', param(p, 'Rw'))
+        g('half2', 'pc', 'p2', param(p, 'Rw'))
+        g('sec', 's1', 's2', param(p, 'Rw'))
+        break
+      case 'vsense':
+        g('main', '+', '-', R_OPEN)
+        break
       case 'ground':
         break
     }

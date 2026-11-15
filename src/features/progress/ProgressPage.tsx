@@ -65,6 +65,8 @@ export function ProgressPage() {
     ['Simulation runs logged', String(s.simulations)],
     ['Badges earned', `${s.badges.earned} / ${s.badges.total}`],
     ['Sections opened', `${Object.keys(data.moduleVisits).length} / ${MODULES.length}`],
+    ['Academy: courses enrolled', String(data.enrolments.length)],
+    ['Academy: marked attempts recorded', String(data.attempts.length)],
   ]
 
   return (
@@ -88,6 +90,11 @@ export function ProgressPage() {
               ))}
             </tbody>
           </table>
+          <p className="mt-3 text-sm">
+            <Link to="/academy/record" className="text-signal-300 hover:underline" data-testid="progress-record-link">
+              Open the competency record →
+            </Link>
+          </p>
           <p className="mt-3 text-xs text-ink-500">Overall weighting: lessons 35 %, exercises 15 %, projects 15 %, assessments 15 %, component identification 10 %, troubleshooting 10 %.</p>
         </Panel>
 

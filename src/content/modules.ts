@@ -20,6 +20,20 @@ export const MODULES: LearningModule[] = [
     prerequisites: [],
   },
   {
+    id: 'academy',
+    path: '/academy',
+    title: 'Learning Academy',
+    short: 'Academy',
+    icon: 'academy',
+    level: 'foundation',
+    phase: 6,
+    status: 'live',
+    summary: 'The structured programme: fifteen courses from electrical safety to advanced inverter design, with lessons, worked examples, quizzes, assignments, practical laboratory tasks, examinations and a competency record.',
+    objectives: [],
+    lessons: [],
+    prerequisites: [],
+  },
+  {
     id: 'fundamentals',
     path: '/fundamentals',
     title: 'Inverter Fundamentals',
@@ -143,7 +157,7 @@ export const MODULES: LearningModule[] = [
     icon: 'wrench-build',
     level: 'intermediate',
     phase: 6,
-    status: 'planned',
+    status: 'live',
     summary:
       'Eight guided design projects, from a basic DC-to-AC converter to a hybrid inverter, each with assembly, simulation and assessment.',
     objectives: [
@@ -315,7 +329,7 @@ export const MODULES: LearningModule[] = [
 export const MODULE_BY_ID = Object.fromEntries(MODULES.map((m) => [m.id, m])) as Record<ModuleId, LearningModule>
 
 /** Teaching modules in pathway order (excludes dashboard and progress views). */
-export const PATHWAY: LearningModule[] = MODULES.filter((m) => m.id !== 'dashboard' && m.id !== 'progress')
+export const PATHWAY: LearningModule[] = MODULES.filter((m) => m.id !== 'dashboard' && m.id !== 'progress' && m.id !== 'academy')
 
 export const ALL_LESSON_IDS = PATHWAY.flatMap((m) => m.lessons.map((l) => l.id))
 

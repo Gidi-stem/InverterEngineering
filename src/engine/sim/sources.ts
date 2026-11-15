@@ -9,6 +9,7 @@ import type { PlacedPart } from '../circuit/types'
  *   0 Static : level state (High/Low)
  *   1 PWM    : high for duty·T of each period, delayed by phase/360·T
  *   2 SPWM   : bipolar sinusoidal PWM, high while m·sin(2π·fm·t) > triangle carrier at f
+ *   3 SPWM regulated : as SPWM, with m supplied by the output-voltage regulator
  * "Inverted" complements the logic; dead time delays every turn-on edge by td (the output is high
  * only if the logic was already high td earlier), as a gate-drive dead-time circuit does.
  */
@@ -63,10 +64,11 @@ function rawLogic(g: GeneratorSpec, t: number): boolean {
 }
 
 /** Generator logic output (true = OUT driven high) at time t. */
-export function generatorHigh(g: GeneratorSpec, t: number): boolean {
+export function generatorHigh(g: GeneratorSpec, t: number, mOverride?: number): boolean {
   if (g.mode === 0) return g.level === 1
-  if (!rawLogic(g, t)) return false
-  return g.td > 0 ? rawLogic(g, t - g.td) : true
+  const spec = g.mode === 3 ? { ...g, mode: 2, m: mOverride ?? g.m } : g
+  if (!rawLogic(spec, t)) return false
+  return spec.td > 0 ? rawLogic(spec, t - spec.td) : true
 }
 
 export const acValue = (vrms: number, f: number, t: number) => vrms * Math.SQRT2 * Math.sin(TAU * f * t)

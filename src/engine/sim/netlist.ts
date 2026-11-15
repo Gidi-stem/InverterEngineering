@@ -8,7 +8,8 @@ import { generatorSpec, type GeneratorSpec } from './sources'
  * numbering comes from the Phase 4 connection graph, so the simulation and the static checks
  * describe the same circuit. Every primitive maps onto a SPICE element:
  *   R → R,  VS (Norton) → V + series R,  C → C,  L → L,  D → piecewise-linear D,
- *   SW → voltage-controlled switch,  X → ideal transformer (coupled L with k = 1, plus L_m).
+ *   SW → voltage-controlled switch,  X → ideal transformer (coupled L with k = 1, plus L_m),
+ *   X3 → centre-tapped ideal transformer (three coupled windings on one core),  IS → current source.
  *
  * Currents use the convention "flowing from terminal a to terminal b inside the element".
  */
@@ -40,6 +41,10 @@ export type El =
   | { k: 'SW'; part: string; tag: string; a: number; b: number; Ron: number; ctrl: Ctrl }
   | { k: 'IG'; part: string; tag: string; a: number; b: number; Vsat: number; Rs: number; g: number; e: number; vth: number }
   | { k: 'X'; part: string; tag: string; a: number; b: number; s1: number; s2: number; n: number; br: number }
+  /** Constant current source: I flows out of terminal a into the external circuit (inside: b → a). */
+  | { k: 'IS'; part: string; tag: string; a: number; b: number; I: number }
+  /** Centre-tapped ideal transformer: winding A a→c, winding B c→d, secondary s1→s2; branch currents br, br+1. */
+  | { k: 'X3'; part: string; tag: string; a: number; b: number; c: number; d: number; s1: number; s2: number; n: number; br: number }
 
 export interface Netlist {
   doc: CircuitDoc
@@ -141,6 +146,29 @@ export function compile(doc: CircuitDoc): Netlist | { error: string } {
       case 'switch':
         els.push({ k: 'SW', part: id, tag: 'main', a: N(p, '1'), b: N(p, '2'), Ron: R_CLOSED, ctrl: { kind: 'fixed', on: stateOf(p, 'closed') === 1 } })
         break
+      case 'pv-array': {
+        const voc = param(p, 'Voc')
+        const isc = param(p, 'Isc')
+        els.push({ k: 'IS', part: id, tag: 'main', a: N(p, '+'), b: N(p, '-'), I: isc })
+        els.push({ k: 'D', part: id, tag: 'pv', a: N(p, '+'), b: N(p, '-'), Vf: 0.8 * voc, Rd: (0.2 * voc) / isc })
+        break
+      }
+      case 'transformer-ct': {
+        const xa = internal()
+        const xb = internal()
+        const y1 = internal()
+        const rw = Math.max(param(p, 'Rw'), 1e-6)
+        R('rp', N(p, 'p1'), xa, rw)
+        R('rp2', N(p, 'p2'), xb, rw)
+        els.push({ k: 'L', part: id, tag: 'lm', a: xa, b: N(p, 'pc'), L: param(p, 'Lm') })
+        els.push({ k: 'X3', part: id, tag: 'main', a: xa, b: N(p, 'pc'), c: N(p, 'pc'), d: xb, s1: y1, s2: N(p, 's2'), n: param(p, 'n'), br })
+        br += 2
+        R('rs', y1, N(p, 's1'), rw)
+        break
+      }
+      case 'vsense':
+        R('main', N(p, '+'), N(p, '-'), R_OPEN)
+        break
       case 'ground':
         break
     }
@@ -200,6 +228,22 @@ export function signalsOf(net: Netlist): SignalDef[] {
         V(`V:${p.id}`, `V primary(${L})`, p, 'p1', 'p2')
         V(`VS:${p.id}`, `V secondary(${L})`, p, 's1', 's2')
         I(`I:${p.id}`, `I primary(${L})`, p, [['rp', 1]])
+        I(`IS:${p.id}`, `I secondary(${L}) out of S1`, p, [['rs', -1]])
+        I(`IM:${p.id}`, `I magnetising(${L})`, p, [['lm', 1]])
+        break
+      case 'pv-array':
+        V(`V:${p.id}`, `V(${L}) +−`, p, '+', '-')
+        I(`I:${p.id}`, `I(${L}) delivered`, p, [['main', -1], ['pv', -1]])
+        break
+      case 'vsense':
+        V(`V:${p.id}`, `V sensed(${L})`, p, '+', '-')
+        break
+      case 'transformer-ct':
+        V(`V:${p.id}`, `V P1−CT(${L})`, p, 'p1', 'pc')
+        V(`VB:${p.id}`, `V CT−P2(${L})`, p, 'pc', 'p2')
+        V(`VS:${p.id}`, `V secondary(${L})`, p, 's1', 's2')
+        I(`I:${p.id}`, `I P1(${L})`, p, [['rp', 1]])
+        I(`IB:${p.id}`, `I P2(${L})`, p, [['rp2', 1]])
         I(`IS:${p.id}`, `I secondary(${L}) out of S1`, p, [['rs', -1]])
         I(`IM:${p.id}`, `I magnetising(${L})`, p, [['lm', 1]])
         break

@@ -42,6 +42,9 @@ const QUICK: Record<string, string[]> = {
   electrolytic: ['C'],
   inductor: ['L'],
   transformer: ['n'],
+  'transformer-ct': ['n'],
+  'pv-array': ['Voc', 'Isc'],
+  vsense: ['Vset'],
 }
 const STEPS = [undefined, 1e-7, 2e-7, 5e-7, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4]
 
