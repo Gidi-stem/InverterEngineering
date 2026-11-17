@@ -1,5 +1,5 @@
 import type { ProgressData } from '../../types/progress'
-import { COURSE_BY_ID } from './catalogue'
+import { SHELL_BY_ID as COURSE_BY_ID } from './shells'
 import { courseComplete } from './logic'
 
 /**

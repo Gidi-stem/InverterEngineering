@@ -1,12 +1,17 @@
 import { Link } from 'react-router-dom'
 import { ALL_LESSONS, lessonDone } from '../../content/academy/logic'
+import { lessonAuthored } from '../../content/academy/types'
 import type { ProgressData } from '../../types/progress'
 
-/** Learning Academy entry: the next lesson to study in the published courses. */
+/**
+ * Learning Academy entry: the next lesson to study in the published courses. Reads only the
+ * lightweight course shells (via `ALL_LESSONS`) — never the full, authored lesson content — so
+ * this banner does not pull the Academy's course content into the dashboard's bundle.
+ */
 export default function AcademyBanner({ data }: { data: ProgressData }) {
-  const next = ALL_LESSONS.find((x) => x.lesson.content && !lessonDone(data, x.lesson))
-  const passed = ALL_LESSONS.filter((x) => x.lesson.content && lessonDone(data, x.lesson)).length
-  const total = ALL_LESSONS.filter((x) => x.lesson.content).length
+  const next = ALL_LESSONS.find((x) => lessonAuthored(x.lesson) && !lessonDone(data, x.lesson))
+  const passed = ALL_LESSONS.filter((x) => lessonAuthored(x.lesson) && lessonDone(data, x.lesson)).length
+  const total = ALL_LESSONS.filter((x) => lessonAuthored(x.lesson)).length
   return (
     <section className="panel mb-5 flex flex-wrap items-center justify-between gap-4 px-4 py-3" data-testid="academy-banner">
       <div className="min-w-0">

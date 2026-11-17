@@ -127,7 +127,15 @@ export interface AcademyLesson {
   legacyId?: string
   /** Present when published. */
   content?: LessonContent
+  /** Set on a lightweight course shell (shells.ts) in place of `content`, which it omits to keep
+   * the shell small: true means the real, full course has authored content for this lesson. */
+  hasContent?: boolean
 }
+
+/** True wherever a lesson has authored content available to study — either the content itself
+ * (the full, authored course) or the `hasContent` marker (a lightweight shell, gates.ts/logic.ts
+ * use this for prerequisite and progress checks without needing the lesson text at all). */
+export const lessonAuthored = (l: Pick<AcademyLesson, 'content' | 'hasContent'>): boolean => !!l.content || !!l.hasContent
 
 /**
  * A practical assessment carried out inside the academy (used where the laboratory itself is gated by
