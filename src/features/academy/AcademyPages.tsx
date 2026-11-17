@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
-import { COURSE_BY_ID, COURSES, VIRTUAL_COMPETENCY_NOTE } from '../../content/academy/catalogue'
-import { competencyRecord, courseUnlock } from '../../content/academy/catalogueLogic'
-import { bestScore, courseComplete, evidenceMet, examStatus, lessonDone, LESSON_CHECK_PASS, moduleStatus, practicalCredited, quizAvailability } from '../../content/academy/logic'
+import { bestScore, competencyRecord, courseComplete, courseUnlock, evidenceMet, examStatus, lessonDone, LESSON_CHECK_PASS, moduleStatus, practicalCredited, quizAvailability } from '../../content/academy/logic'
+import { SHELL_BY_ID, SHELL_COURSES, SHELL_VIRTUAL_COMPETENCY_NOTE } from '../../content/academy/shells'
+import { useCourse, type CourseLoad } from '../../content/academy/useCourse'
 import { TaskRunner } from './TaskRunner'
 import { routeOf } from '../../content/academy/routes'
-import type { AcademyLesson, AcademyModule, Course, Level, Stage } from '../../content/academy/types'
+import { lessonAuthored, type AcademyLesson, type AcademyModule, type Course, type Level, type Stage } from '../../content/academy/types'
 import { useProgress } from '../../store/progressStore'
 import type { ProgressData } from '../../types/progress'
 import { Button, Meter, Panel, SafetyNotice, Tag } from '../../ui/primitives'
@@ -14,6 +14,47 @@ import { Demo } from './Demos'
 import { Diagram } from './diagrams'
 import { QuestionSet } from './QuestionSet'
 import { Inline, Rich } from './Rich'
+
+/**
+ * Every page here keyed by `:courseId` loads that one course's full content on demand via
+ * `useCourse` (`../../content/academy/courseLoader`) — its own dynamic import per authored course —
+ * so opening F1 never fetches F2/S1/S2, and vice versa. `SHELL_*` is the lightweight catalogue
+ * metadata (ids, titles, prerequisites, structure) used for the course listing and for naming
+ * *other* courses in cross-references (a locked prerequisite's title, a recommended course's title)
+ * without loading their content.
+ */
+function CourseLoading() {
+  return (
+    <Page>
+      <p className="animate-pulse text-sm text-ink-400" data-testid="course-loading" role="status">
+        Loading course…
+      </p>
+    </Page>
+  )
+}
+
+function CourseLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Page>
+      <div className="panel space-y-2 p-4" role="alert" data-testid="course-load-error">
+        <p className="font-semibold text-danger-400">This course couldn't be loaded.</p>
+        <p className="text-sm text-ink-400">Check your connection and try again.</p>
+        <Button variant="primary" onClick={onRetry}>
+          Retry
+        </Button>
+      </div>
+    </Page>
+  )
+}
+
+/** Renders the shared loading/not-found/error states of a `useCourse` result; returns `null` once
+ * the course is `ready`, so the caller continues with `course`. */
+function CourseLoadFallback({ load }: { load: CourseLoad & { retry: () => void } }) {
+  if (load.status === 'loading') return <CourseLoading />
+  if (load.status === 'notfound') return <Navigate to="/academy" replace />
+  if (load.status === 'error') return <CourseLoadError onRetry={load.retry} />
+  return null
+}
 
 /** Learning Academy: catalogue, courses, lessons, quizzes, assignments, examinations and the competency record. */
 const STAGE: Record<Stage, string> = { foundation: 'Foundation (beginner)', practitioner: 'Practitioner (intermediate)', specialist: 'Specialist (advanced)' }
@@ -61,7 +102,7 @@ function CourseLock({ c, p }: { c: Course; p: ProgressData }) {
         {u.missing.map((id) => (
           <li key={id}>
             <Link to={`/academy/${id}`} className="text-signal-300 hover:underline">
-              {id} {COURSE_BY_ID[id].title}
+              {id} {SHELL_BY_ID[id].title}
             </Link>
           </li>
         ))}
@@ -71,7 +112,7 @@ function CourseLock({ c, p }: { c: Course; p: ProgressData }) {
 }
 
 function courseProgress(p: ProgressData, c: Course) {
-  const lessons = c.modules.flatMap((m) => m.lessons).filter((l) => l.content)
+  const lessons = c.modules.flatMap((m) => m.lessons).filter(lessonAuthored)
   const done = lessons.filter((l) => lessonDone(p, l)).length
   return { done, total: lessons.length }
 }
@@ -101,7 +142,7 @@ function Catalogue() {
         <section key={st} className="mt-6">
           <h2 className="mb-2 text-sm font-semibold tracking-wide text-ink-300 uppercase">{STAGE[st]}</h2>
           <ul className="grid gap-3 sm:grid-cols-2" data-testid={`stage-${st}`}>
-            {COURSES.filter((c) => c.stage === st).map((c) => {
+            {SHELL_COURSES.filter((c) => c.stage === st).map((c) => {
               const pr = courseProgress(p, c)
               const done = courseComplete(p, c)
               const enrolled = p.enrolments.some((e) => e.courseId === c.id)
@@ -140,10 +181,11 @@ function Catalogue() {
 
 function CoursePage() {
   const { courseId = '' } = useParams()
-  const c = COURSE_BY_ID[courseId]
+  const load = useCourse(courseId)
   const p = useData()
   const enrol = useProgress((s) => s.enrol)
-  if (!c) return <Navigate to="/academy" replace />
+  if (load.status !== 'ready') return <CourseLoadFallback load={load} />
+  const c = load.course
   const unlock = courseUnlock(p, c)
   const enrolled = p.enrolments.some((e) => e.courseId === c.id)
   const ex = examStatus(p, c)
@@ -177,7 +219,7 @@ function CoursePage() {
               Recommended prior study (scheduled courses; not required until published):{' '}
               {unlock.recommended.map((id) => (
                 <Link key={id} to={`/academy/${id}`} className="mx-0.5 text-signal-300 hover:underline">
-                  {id} {COURSE_BY_ID[id].title}
+                  {id} {SHELL_BY_ID[id].title}
                 </Link>
               ))}
               . Until then, the laboratory tools listed in each lesson cover the essentials.
@@ -296,14 +338,16 @@ function H({ n, children }: { n: number; children?: ReactNode }) {
 
 function LessonPage() {
   const { courseId = '', lessonId = '' } = useParams()
-  const c = COURSE_BY_ID[courseId]
+  const load = useCourse(courseId)
+  const c = load.status === 'ready' ? load.course : undefined
   const flat = useMemo(() => (c ? c.modules.flatMap((m) => m.lessons.map((l) => ({ m, l }))) : []), [c])
   const idx = flat.findIndex((x) => x.l.id === lessonId)
   const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const completeLesson = useProgress((s) => s.completeLesson)
   const enrol = useProgress((s) => s.enrol)
-  if (!c || idx < 0) return <Navigate to={c ? `/academy/${c.id}` : '/academy'} replace />
+  if (!c) return <CourseLoadFallback load={load} />
+  if (idx < 0) return <Navigate to={`/academy/${c.id}`} replace />
   const { m, l } = flat[idx]
   const prev = flat[idx - 1]
   const next = flat[idx + 1]
@@ -548,18 +592,20 @@ function Homework({ lesson, onSubmit }: { lesson: AcademyLesson; onSubmit: (scor
 
 function useCourseModule() {
   const { courseId = '', moduleId = '' } = useParams()
-  const c = COURSE_BY_ID[courseId]
+  const load = useCourse(courseId)
+  const c = load.status === 'ready' ? load.course : undefined
   const m = c?.modules.find((x) => x.id === moduleId)
-  return { c, m }
+  return { load, c, m }
 }
 
 function QuizPage() {
-  const { c, m } = useCourseModule()
+  const { load, c, m } = useCourseModule()
   const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const enrol = useProgress((s) => s.enrol)
   const [seed, setSeed] = useState<number | null>(null)
-  if (!c || !m?.quiz) return <Navigate to="/academy" replace />
+  if (!c) return <CourseLoadFallback load={load} />
+  if (!m?.quiz) return <Navigate to="/academy" replace />
   const av = quizAvailability(p, m)
   const st = moduleStatus(p, m)
   if (!courseUnlock(p, c).unlocked)
@@ -609,11 +655,12 @@ function QuizPage() {
 }
 
 function AssignmentPage() {
-  const { c, m } = useCourseModule()
+  const { load, c, m } = useCourseModule()
   const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const [open, setOpen] = useState<Record<number, boolean>>({})
-  if (!c || !m?.assignment) return <Navigate to="/academy" replace />
+  if (!c) return <CourseLoadFallback load={load} />
+  if (!m?.assignment) return <Navigate to="/academy" replace />
   if (!courseUnlock(p, c).unlocked)
     return (
       <Page>
@@ -654,7 +701,8 @@ function AssignmentPage() {
 
 function ExamPage() {
   const { courseId = '' } = useParams()
-  const c = COURSE_BY_ID[courseId]
+  const load = useCourse(courseId)
+  const c = load.status === 'ready' ? load.course : undefined
   const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const [session, setSession] = useState<{ seed: number; deadline: number } | null>(null)
@@ -664,7 +712,8 @@ function ExamPage() {
     const t = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(t)
   }, [session])
-  if (!c?.exam) return <Navigate to="/academy" replace />
+  if (!c) return <CourseLoadFallback load={load} />
+  if (!c.exam) return <Navigate to="/academy" replace />
   if (!courseUnlock(p, c).unlocked)
     return (
       <Page>
@@ -735,12 +784,14 @@ function ExamPage() {
 
 function PracticalPage() {
   const { courseId = '', taskId = '' } = useParams()
-  const c = COURSE_BY_ID[courseId]
+  const load = useCourse(courseId)
+  const c = load.status === 'ready' ? load.course : undefined
   const p = useData()
   const recordAttempt = useProgress((s) => s.recordAttempt)
   const enrol = useProgress((s) => s.enrol)
   const found = c?.modules.flatMap((m) => m.practicals.map((x) => ({ m, x }))).find(({ x }) => x.task?.id === taskId)
-  if (!c || !found) return <Navigate to={c ? `/academy/${c.id}` : '/academy'} replace />
+  if (!c) return <CourseLoadFallback load={load} />
+  if (!found) return <Navigate to={`/academy/${c.id}`} replace />
   const { m, x } = found
   const passed = evidenceMet(p, x.evidence)
   return (
@@ -785,7 +836,7 @@ function RecordPage() {
         Levels: <strong className="text-ink-200">Awareness</strong> (lesson checks passed), <strong className="text-ink-200">Applied</strong> (module quizzes and practical tasks), <strong className="text-ink-200">Virtual competency</strong> (all evidence including the examination).
       </p>
       <div className="mt-3">
-        <SafetyNotice>{VIRTUAL_COMPETENCY_NOTE}</SafetyNotice>
+        <SafetyNotice>{SHELL_VIRTUAL_COMPETENCY_NOTE}</SafetyNotice>
       </div>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm" data-testid="competency-table">

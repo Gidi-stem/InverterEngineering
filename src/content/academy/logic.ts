@@ -1,15 +1,16 @@
 import type { Attempt, ProgressData } from '../../types/progress'
-import { SHELL_COURSES } from './shells'
+import { SHELL_BY_ID, SHELL_COMPETENCIES, SHELL_COURSES } from './shells'
 import { lessonAuthored, type AcademyLesson, type AcademyModule, type Course, type Evidence, type Practical, type PracticalTask, type Question } from './types'
 
 /**
- * Pure Learning Academy rules: marking, completion, prerequisites and examination availability.
- * Everything is derived from ProgressData, so nothing can drift out of step. This file deliberately
- * never imports the full, authored course catalogue (`./catalogue`) — only the lightweight course
- * shells (`./shells`), so that anything built on these functions (the prerequisite gates, the
- * dashboard banner) never pulls lesson/quiz/exam content into its bundle. `courseUnlock` and
- * `competencyRecord`, which render full course titles and are only ever used from within the
- * already-lazy Academy pages, live in `./catalogueLogic` instead, alongside the full catalogue.
+ * Learning Academy rules: marking, completion, prerequisites, examination availability and the
+ * competency record. Everything is derived from ProgressData, so nothing can drift out of step.
+ * This file deliberately never imports the full, authored course catalogue (`./catalogue`) — only
+ * the lightweight course shells (`./shells`), which carry every field these functions need (ids,
+ * titles, prerequisites, structure, quiz pass marks, exam settings, practical evidence) without any
+ * lesson/quiz/exam content. That keeps every consumer of this file — the prerequisite gates, the
+ * dashboard banner, and the Academy pages' course-unlock/competency-record displays — free of course
+ * content, which the Academy pages instead load per course, on demand, via `./courseLoader`.
  */
 export type Answer = number | number[] | null
 
@@ -211,9 +212,68 @@ export function courseComplete(p: ProgressData, c: Course): boolean {
   return c.status === 'published' && c.modules.every((m) => moduleStatus(p, m).complete) && examStatus(p, c).passed
 }
 
-/** `courseUnlock` and `competencyRecord` (full course titles, prerequisite names) live in
- * `./catalogueLogic`, next to the full catalogue they read from — see this file's header. */
-
 /** Lightweight (shell) flattening of every lesson, for the dashboard's "continue learning" banner:
  * course/module/lesson ids and titles and whether each lesson is authored, nothing heavier. */
 export const ALL_LESSONS = SHELL_COURSES.flatMap((c) => c.modules.flatMap((m) => m.lessons.map((l) => ({ course: c, module: m, lesson: l }))))
+
+export interface Unlock {
+  unlocked: boolean
+  /** Published prerequisites not yet passed: these lock the course. */
+  missing: string[]
+  /** Scheduled prerequisites: shown as recommended prior study (blueprint §1.1). */
+  recommended: string[]
+}
+
+/** Whether a course's own pages (lessons/quiz/assignment/exam/practicals) are open to the student.
+ * Reads only the course shells — titles for display come from `SHELL_BY_ID` wherever a component
+ * shows a prerequisite's name (e.g. `CourseLock`), never from the full, authored course. */
+export function courseUnlock(p: ProgressData, c: Course): Unlock {
+  const missing: string[] = []
+  const recommended: string[] = []
+  for (const id of c.prerequisites) {
+    const pre = SHELL_BY_ID[id]
+    if (!pre) continue
+    if (pre.status === 'scheduled') recommended.push(id)
+    else if (!courseComplete(p, pre)) missing.push(id)
+  }
+  for (const id of c.recommended ?? []) if (SHELL_BY_ID[id] && !recommended.includes(id) && !courseComplete(p, SHELL_BY_ID[id])) recommended.push(id)
+  return { unlocked: missing.length === 0, missing, recommended }
+}
+
+export type CompetencyLevel = 'none' | 'awareness' | 'applied' | 'virtual-competency'
+export interface CompetencyRecord {
+  id: string
+  title: string
+  level: CompetencyLevel
+  evidence: string[]
+  available: boolean
+}
+
+/** Awareness: a lesson check passed. Applied: every module quiz and practical. Virtual competency:
+ * everything including the exam. Reads only the course shells — the practical titles shown in the
+ * evidence list are preserved on the shell (shells.test.ts checks this stays in sync). */
+export function competencyRecord(p: ProgressData): CompetencyRecord[] {
+  return SHELL_COMPETENCIES.map((cu) => {
+    const courses = cu.courses.map((id: string) => SHELL_BY_ID[id]).filter(Boolean)
+    const published = courses.filter((c) => c.status === 'published')
+    const evidence: string[] = []
+    let level: CompetencyLevel = 'none'
+    if (published.length) {
+      const mods = published.flatMap((c) => c.modules)
+      const anyLesson = mods.some((m) => m.lessons.some((l) => lessonDone(p, l)))
+      const applied = mods.every((m) => moduleStatus(p, m).quizPassed && m.practicals.every((x) => evidenceMet(p, x.evidence)))
+      const full = published.every((c) => courseComplete(p, c))
+      level = full ? 'virtual-competency' : applied ? 'applied' : anyLesson ? 'awareness' : 'none'
+      for (const c of published) {
+        for (const m of c.modules) {
+          const st = moduleStatus(p, m)
+          if (m.quiz && st.quizPassed) evidence.push(`${m.id} quiz ${Math.round(st.quizBest * 100)} %`)
+          for (const x of m.practicals) if (evidenceMet(p, x.evidence)) evidence.push(x.title)
+        }
+        const ex = examStatus(p, c)
+        if (ex.passed) evidence.push(`${c.id} examination ${Math.round(ex.best * 100)} %`)
+      }
+    }
+    return { id: cu.id, title: cu.title, level, evidence, available: published.length > 0 }
+  })
+}

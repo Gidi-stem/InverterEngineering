@@ -40,7 +40,7 @@ describe('course shells stay in sync with the real catalogue', () => {
         expect(sm.lessons.map(lessonAuthored)).toEqual(m.lessons.map(lessonAuthored))
         expect(sm.quiz?.pass).toBe(m.quiz?.pass)
         expect(!!sm.assignment).toBe(!!m.assignment)
-        expect(sm.practicals.map((x) => ({ id: x.id, evidence: x.evidence }))).toEqual(m.practicals.map((x) => ({ id: x.id, evidence: x.evidence })))
+        expect(sm.practicals.map((x) => ({ id: x.id, title: x.title, evidence: x.evidence }))).toEqual(m.practicals.map((x) => ({ id: x.id, title: x.title, evidence: x.evidence })))
       })
     }
   })

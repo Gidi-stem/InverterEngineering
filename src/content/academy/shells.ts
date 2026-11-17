@@ -1,15 +1,18 @@
 /**
- * Lightweight structural facts for every course: ids, titles, prerequisites, lesson/module
- * presence, quiz pass marks, practicals' evidence and exam configuration — everything the
- * prerequisite gates (gates.ts), course-unlock logic and the dashboard banner need, with NONE
- * of the heavy authored content (lesson bodies, worked examples, question text, diagrams,
- * assignment briefs). This keeps the dashboard and the circuit/build/solar/3D laboratory pages
- * from pulling in the full course catalogue merely to check a prerequisite.
+ * Generated, lightweight stand-ins for the full, authored course catalogue (`catalogue.ts`).
  *
- * GENERATED from the real catalogue (content/academy/_genshells.test.ts, run once and removed).
- * A consistency test (shells.test.ts) checks this file stays in sync with the real courses:
- * regenerate it (temporarily restore _genshells.test.ts) whenever a course's structure changes
- * (a lesson, module, practical or exam is added, removed or renamed).
+ * Same ids, titles, prerequisites, module/lesson/practical structure, quiz pass marks and exam
+ * settings as the real courses — but with lesson content, quiz/exam questions and assignment tasks
+ * stripped out (replaced with a `hasContent: true` marker per authored lesson, see
+ * `lessonAuthored()` in ./types). This is what every prerequisite gate (./gates), the dashboard
+ * banner, course-unlock checks and the competency record read — never the real catalogue — so that
+ * none of them pull any course's actual content into their bundle. The Learning Academy's own pages
+ * (features/academy/AcademyPages.tsx) load a course's real content on demand, per course, via
+ * ./courseLoader; this file is what they show for a course before/without that content.
+ *
+ * Not regenerated automatically — see shells.test.ts, which fails if this drifts from the real
+ * catalogue. Regenerate with the one-off generator kept in the Phase 7.1/7.2 history (not checked
+ * in): a short Vitest file that imports catalogue.ts, strips the heavy fields, and writes this file.
  */
 import type { Course } from './types'
 
@@ -53,6 +56,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F1.M1.P1",
+            "title": "Identify the hazards on a workbench",
             "evidence": {
               "kind": "task",
               "id": "f1-hazards-bench"
@@ -98,6 +102,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F1.M2.P1",
+            "title": "Stored-energy and fault-current assessment",
             "evidence": {
               "kind": "task",
               "id": "f1-stored-energy"
@@ -143,6 +148,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F1.M3.P1",
+            "title": "Safe isolation sequence drill",
             "evidence": {
               "kind": "task",
               "id": "f1-isolation-sequence"
@@ -150,6 +156,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "F1.M3.P2",
+            "title": "Prove-dead drill with a virtual tester",
             "evidence": {
               "kind": "task",
               "id": "f1-prove-dead"
@@ -195,6 +202,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F1.M4.P1",
+            "title": "Protection selection assessment",
             "evidence": {
               "kind": "task",
               "id": "f1-protection"
@@ -263,6 +271,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F2.M1.P1",
+            "title": "Units and conversions assessment",
             "evidence": {
               "kind": "task",
               "id": "f2-units"
@@ -308,6 +317,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F2.M2.P1",
+            "title": "Circuit laboratory: verify Ohm's law (ckt-01)",
             "evidence": {
               "kind": "exercise",
               "id": "ckt-01"
@@ -353,6 +363,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F2.M3.P1",
+            "title": "Circuit analysis assessment",
             "evidence": {
               "kind": "task",
               "id": "f2-circuit-analysis"
@@ -392,6 +403,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F2.M4.P1",
+            "title": "Simulator: measure an RC time constant (sim-01)",
             "evidence": {
               "kind": "activity",
               "id": "sim:sim-01"
@@ -399,6 +411,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "F2.M4.P2",
+            "title": "Circuit laboratory: capacitor charge and safe discharge (ckt-03)",
             "evidence": {
               "kind": "exercise",
               "id": "ckt-03"
@@ -406,6 +419,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "F2.M4.P3",
+            "title": "Simulator: RL response (sim-02)",
             "evidence": {
               "kind": "activity",
               "id": "sim:sim-02"
@@ -451,6 +465,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "F2.M5.P1",
+            "title": "Circuit laboratory: LED current limiting (ckt-02)",
             "evidence": {
               "kind": "exercise",
               "id": "ckt-02"
@@ -458,6 +473,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "F2.M5.P2",
+            "title": "DC system design assessment",
             "evidence": {
               "kind": "task",
               "id": "f2-dc-design"
@@ -1494,6 +1510,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M1.P1",
+            "title": "Configure a fully compatible design",
             "evidence": {
               "kind": "activity",
               "id": "build:design-ok:bld-d"
@@ -1501,6 +1518,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M1.P2",
+            "title": "Discharge a capacitor bank safely",
             "evidence": {
               "kind": "activity",
               "id": "lab3d:discharge"
@@ -1549,6 +1567,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M2.P1",
+            "title": "Build project A",
             "evidence": {
               "kind": "project",
               "id": "bld-a"
@@ -1556,6 +1575,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M2.P2",
+            "title": "Build project B",
             "evidence": {
               "kind": "project",
               "id": "bld-b"
@@ -1563,6 +1583,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M2.P3",
+            "title": "Build project C",
             "evidence": {
               "kind": "project",
               "id": "bld-c"
@@ -1627,6 +1648,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M3.P1",
+            "title": "Pure sine-wave experiment",
             "evidence": {
               "kind": "activity",
               "id": "sim:sim-10"
@@ -1634,6 +1656,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M3.P2",
+            "title": "Build project D",
             "evidence": {
               "kind": "project",
               "id": "bld-d"
@@ -1641,6 +1664,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M3.P3",
+            "title": "Troubleshoot project D",
             "evidence": {
               "kind": "troubleshoot",
               "project": "bld-d"
@@ -1682,6 +1706,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M4.P1",
+            "title": "Build project E",
             "evidence": {
               "kind": "project",
               "id": "bld-e"
@@ -1689,6 +1714,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M4.P2",
+            "title": "Build project F",
             "evidence": {
               "kind": "project",
               "id": "bld-f"
@@ -1730,6 +1756,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M5.P1",
+            "title": "Build project G",
             "evidence": {
               "kind": "project",
               "id": "bld-g"
@@ -1737,6 +1764,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M5.P2",
+            "title": "Build project H",
             "evidence": {
               "kind": "project",
               "id": "bld-h"
@@ -1776,6 +1804,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S1.M6.P1",
+            "title": "Troubleshoot project C",
             "evidence": {
               "kind": "troubleshoot",
               "project": "bld-c"
@@ -1783,6 +1812,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M6.P2",
+            "title": "Troubleshoot project E",
             "evidence": {
               "kind": "troubleshoot",
               "project": "bld-e"
@@ -1790,6 +1820,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S1.M6.P3",
+            "title": "Troubleshoot project H",
             "evidence": {
               "kind": "troubleshoot",
               "project": "bld-h"
@@ -1862,6 +1893,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S2.M1.P1",
+            "title": "PV I–V laboratory: predict and verify a string",
             "evidence": {
               "kind": "activity",
               "id": "solar:iv"
@@ -1907,6 +1939,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S2.M2.P1",
+            "title": "Build project G: solar inverter with MPPT stage",
             "evidence": {
               "kind": "project",
               "id": "bld-g"
@@ -1914,6 +1947,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M2.P2",
+            "title": "Array and controller configuration assessment",
             "evidence": {
               "kind": "task",
               "id": "s2-strings"
@@ -1959,6 +1993,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S2.M3.P1",
+            "title": "Solar laboratory: complete system design from a load profile",
             "evidence": {
               "kind": "activity",
               "id": "solar:design-ok"
@@ -1966,6 +2001,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M3.P2",
+            "title": "Hand-sizing assessment",
             "evidence": {
               "kind": "task",
               "id": "s2-sizing"
@@ -2017,6 +2053,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S2.M4.P1",
+            "title": "Solar laboratory: multi-day energy-management simulation",
             "evidence": {
               "kind": "activity",
               "id": "solar:sim"
@@ -2024,6 +2061,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M4.P2",
+            "title": "Build project H: hybrid inverter",
             "evidence": {
               "kind": "project",
               "id": "bld-h"
@@ -2031,6 +2069,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M4.P3",
+            "title": "Generator integration assessment",
             "evidence": {
               "kind": "task",
               "id": "s2-generator"
@@ -2070,6 +2109,7 @@ export const SHELL_COURSES: Course[] = [
         "practicals": [
           {
             "id": "S2.M5.P1",
+            "title": "Solar laboratory: commission a design",
             "evidence": {
               "kind": "activity",
               "id": "solar:commission"
@@ -2077,6 +2117,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M5.P2",
+            "title": "Troubleshooting: partial shading",
             "evidence": {
               "kind": "activity",
               "id": "solar:fault:shading"
@@ -2084,6 +2125,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M5.P3",
+            "title": "Troubleshooting: cold-morning overvoltage",
             "evidence": {
               "kind": "activity",
               "id": "solar:fault:voc-cold"
@@ -2091,6 +2133,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M5.P4",
+            "title": "Troubleshooting: inverter cut-out on load",
             "evidence": {
               "kind": "activity",
               "id": "solar:fault:cable-drop"
@@ -2098,6 +2141,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M5.P5",
+            "title": "Troubleshooting: generator does not start",
             "evidence": {
               "kind": "activity",
               "id": "solar:fault:gen-threshold"
@@ -2105,6 +2149,7 @@ export const SHELL_COURSES: Course[] = [
           },
           {
             "id": "S2.M5.P6",
+            "title": "Commissioning sequence drill",
             "evidence": {
               "kind": "task",
               "id": "s2-commission-sequence"
@@ -2431,9 +2476,7 @@ export const SHELL_COURSES: Course[] = [
     ]
   }
 ] as Course[]
-
 export const SHELL_BY_ID: Record<string, Course> = Object.fromEntries(SHELL_COURSES.map((c) => [c.id, c]))
-
 export const SHELL_COMPETENCIES = [
   {
     "id": "CU-01",
@@ -2541,5 +2584,4 @@ export const SHELL_COMPETENCIES = [
     ]
   }
 ]
-
 export const SHELL_VIRTUAL_COMPETENCY_NOTE = "Virtual competency. Real-world practice requires supervised physical training and locally required qualifications."

@@ -11,12 +11,15 @@ import { MODEL_BY_ID } from '../models'
 import { MODULES } from '../modules'
 import { SIM_EXPERIMENT_BY_ID } from '../simExperiments'
 import { COMPETENCIES, COURSE_BY_ID, COURSES } from './catalogue'
-import { ALL_LESSONS_FULL as ALL_LESSONS, competencyRecord, courseUnlock } from './catalogueLogic'
 import { GLOSSARY, glossaryRefs } from './glossary'
 import { F2_PRACTICAL_EXERCISES, gateStatus } from './gates'
-import { courseComplete, examStatus, lessonDone, markAll, markQuestion, markTask, moduleStatus, practicalCredited, quizAvailability, seededOrder, type TaskResponse } from './logic'
+import { competencyRecord, courseComplete, courseUnlock, examStatus, lessonDone, markAll, markQuestion, markTask, moduleStatus, practicalCredited, quizAvailability, seededOrder, type TaskResponse } from './logic'
 import { routeOf } from './routes'
 import { DIAGRAM_IDS, SOLAR_TABS, type Course, type Evidence, type LessonContent, type PracticalTask, type Question, type ToolLink } from './types'
+
+/** Full (non-shell) flattening of every lesson, for tests that check authored content depth —
+ * `ALL_LESSONS` in `./logic` is shell-based (no content) by design; see ARCHITECTURE.md §10b/§10c. */
+const ALL_LESSONS = COURSES.flatMap((c) => c.modules.flatMap((m) => m.lessons.map((l) => ({ course: c, module: m, lesson: l }))))
 
 const published = ALL_LESSONS.filter((x) => x.lesson.content)
 const textOf = (c: LessonContent) =>

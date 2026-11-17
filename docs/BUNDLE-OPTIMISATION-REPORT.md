@@ -1,6 +1,6 @@
 # Bundle Optimisation Report
 
-Companion to `docs/PHASE-7-ACCEPTANCE-REVIEW.md` §3–4 and `docs/ARCHITECTURE.md` §10b.
+Companion to `docs/PHASE-7-ACCEPTANCE-REVIEW.md` §3–4 and `docs/ARCHITECTURE.md` §10b–10c. §1–4 cover the first pass (decoupling the dashboard and prerequisite gates from course content); §5–8 cover the second pass (true per-course content loading within the Academy itself).
 
 ## 1. Problem, as measured after Phase 7 (`8874c82`)
 
@@ -48,6 +48,53 @@ Full design in `docs/ARCHITECTURE.md` §10b. Summary:
 
 All checks passed; no regression was found against Phase 1–7 functionality.
 
-## 5. Scoped out (flagged, not silently dropped)
+## 5. Scoped out in the first pass, then completed (§6–7)
 
-True per-course code-splitting *inside* the Academy's own router — so that opening F1 doesn't also fetch F2/S1/S2's content within the 808 kB `AcademyPages` chunk — would require converting six synchronous `COURSE_BY_ID[courseId]` lookups in `AcademyPages.tsx` to async/Suspense-based loading. This is a materially larger rewrite of the Academy's own routing than the measured problem (content forced onto the dashboard and the gated laboratory pages) required, and conflicts with the standing instruction to avoid unnecessary architectural rewrites. It is recorded as a follow-up in `docs/ARCHITECTURE.md` §10b and is worth doing before Phases 8–14 add the remaining eleven courses, since the Academy's own chunk will keep growing with every course authored.
+The first pass (§1–4) left one thing open: true per-course code-splitting *inside* the Academy's own router, so that opening F1 doesn't also fetch F2/S1/S2's content within a single shared `AcademyPages` chunk. That was flagged in `docs/ARCHITECTURE.md` §10b as a follow-up rather than done immediately, since it needed six synchronous `COURSE_BY_ID[courseId]` lookups converted to async loading — a larger change than the first pass's measured problem (content forced onto the dashboard and the gated laboratory pages) required. It was requested as a named follow-up task and is reported here.
+
+## 6. Per-course content loading — fix
+
+Full design in `docs/ARCHITECTURE.md` §10c. Summary:
+
+- **`content/academy/courseLoader.ts`** (new) — one dynamic `import()` per authored course (`F1`, `F2`, `S1`, `S2`), each its own Vite chunk. `loadCourse(id)` caches the result after the first successful load and de-duplicates concurrent requests for the same id, so navigating between a course's lessons, quiz, assignment, exam and practicals never re-fetches it. A "scheduled" (not-yet-authored) course has no entry and resolves immediately to its already-complete shell.
+- **`content/academy/useCourse.ts`** (new) — the hook every course-keyed Academy page now uses instead of the old synchronous catalogue lookup; exposes `loading` / `ready` / `notfound` / `error` states and a `retry()`.
+- **`features/academy/AcademyPages.tsx`** — `CoursePage`, `LessonPage`, `useCourseModule` (shared by `QuizPage`/`AssignmentPage`), `ExamPage` and `PracticalPage` converted to `useCourse`. The catalogue listing and every cross-course title reference (a locked prerequisite, a recommended course) now read the shells, never another course's content. `courseUnlock()`/`competencyRecord()` moved back into `logic.ts`, now shell-based (shell practicals gained a `title` field so the competency record's evidence list still reads correctly) — `catalogueLogic.ts` was deleted, since nothing needs the full catalogue outside the Academy's per-course loader and the test suite.
+
+**No course ID, lesson ID, practical ID, or progress-record/backup format changed.** `catalogue.ts` (still the one source of truth for authored content), `progressStore.ts` and `sanitize.ts` were not modified.
+
+## 7. Measured results (production build, `vite build`)
+
+| Chunk | Size | What it is |
+|---|---|---|
+| Academy catalogue (opening `/academy`) | **fetches no course-content chunk at all** (confirmed live, §8) | Listing page reads only the shells. |
+| `AcademyPages-*.js` (Academy UI + shell-based logic, no course content) | **146.58 kB** (43.52 kB gzip) | Down from 808.14 kB when this chunk carried every course's content. |
+| `f1-*.js` (F1 content, its own chunk) | **138.21 kB** (44.83 kB gzip) | Fetched only when F1 is opened. |
+| `f2-*.js` (F2 content, its own chunk) | **131.92 kB** (43.48 kB gzip) | Fetched only when F2 is opened. |
+| `s1-*.js` (S1 content, its own chunk) | **228.29 kB** (76.46 kB gzip) | Fetched only when S1 is opened. |
+| `s2-*.js` (S2 content, its own chunk) | **154.17 kB** (48.81 kB gzip) | Fetched only when S2 is opened. |
+| `logic-*.js` (shell-based marking/completion/unlock/competency logic) | **44.25 kB** (11.46 kB gzip) | Slightly larger than §3's 40.19 kB now that `courseUnlock`/`competencyRecord` moved back in — still no course content. |
+| `gates-*.js` | **0.38 kB** | Unchanged. |
+| `index-*.js` (main entry) | **333.39 kB** (105.24 kB gzip) | Unchanged. |
+
+**Whether opening one course downloads another's content: no.** Verified live (Playwright, built app under `vite preview`, network responses captured per navigation):
+
+- Opening the Academy catalogue (`#/academy`) fetched none of the `f1`/`f2`/`s1`/`s2` chunks.
+- Opening F1 (`#/academy/F1`) fetched the `f1` chunk and none of `f2`/`s1`/`s2`.
+- Opening F2 fetched only `f2`; opening S1 fetched only `s1`; opening S2 fetched only `s2` — each checked in a fresh browser context, with none of the other three courses' chunks present in that session's network log.
+- Navigating from the F1 course page to one of its lessons triggered no further request for the `f1` chunk (already cached) — confirming no duplicate download when moving between lessons of the same course.
+
+**Loading and error states**: a course not yet resolved shows a loading panel (`data-testid="course-loading"`); a resolution failure (e.g. the course's chunk fails to fetch) shows a retry panel (`data-testid="course-load-error"`) rather than a blank or broken page; an invalid course id still redirects to the catalogue, exactly as before.
+
+**Examinations and practical assessments**: re-verified live post-refactor — F1's lesson page (knowledge check + homework), quiz page (`#/academy/F1/quiz/F1.M1`) and practical page (`#/academy/F1/practical/f1-hazards-bench`) all render their real, course-specific content with no console errors once the course's chunk has loaded.
+
+## 8. Regression testing performed (second pass)
+
+- **Unit tests**: `npx vitest run` → 346/346 passing, unchanged from §4 (no test removed or weakened by this pass either).
+- **Type checking**: `npx tsc -b` → clean.
+- **Lint**: `npx oxlint --max-warnings 0` → clean (one `react-hooks`-style warning on the first draft of `useCourse.ts`, about deriving "loading" via `setState` inside an effect rather than at render time, was fixed by restructuring the hook to compute `'loading'` as whatever's left once the cache and a tracked failure are ruled out, rather than storing it as state).
+- **Production build**: succeeds; sizes in §7.
+- **Chunk-isolation checks**: §7, above — opening one course never fetches another's chunk, and re-navigating within a course never re-fetches it.
+- **Direct URL / gate regression**: re-ran the full direct-URL-bypass and legacy-progress-injection checks from §4 against the rebuilt app — same results, no regression.
+- **Desktop and mobile viewports**: unchanged from §4 — no horizontal overflow or console errors.
+
+All checks passed; no regression was found against Phase 1–7 functionality, and the architecture now fully meets the Academy performance objective: opening the catalogue, or any one course, never downloads another course's content, and the pattern needs only one new line in `courseLoader.ts` per course as Phases 8–14 author more.

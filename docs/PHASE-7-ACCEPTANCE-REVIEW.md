@@ -60,6 +60,6 @@ Full detail: `docs/BUNDLE-OPTIMISATION-REPORT.md` §4.
 
 Phase 7's functionality is sound: the prerequisite system has no circular dependency and no bypass path, and the assessment/completion model cannot be gamed by merely opening content. The bundle issue flagged in the Phase 7 report has been fixed without changing any course ID, lesson ID, progress record, or backup format, and without the existing test suite losing any coverage.
 
-One trade-off was made deliberately rather than silently: true per-course code-splitting *inside* the Academy's own router (so opening F1 doesn't also fetch F2/S1/S2) was scoped out as a materially larger rewrite than the measured problem required, and is recorded as an explicit follow-up in `docs/ARCHITECTURE.md` §10b, worth doing before Phases 8–14 add the remaining eleven courses.
+**Update:** the one trade-off flagged above — true per-course code-splitting *inside* the Academy's own router, so opening F1 doesn't also fetch F2/S1/S2 — was requested as a follow-up task and has since been completed. Opening the Academy catalogue or any one course now fetches only that course's own content chunk (F1/F2/S1/S2 each ≈130–230 kB); opening one never downloads another's. See `docs/ARCHITECTURE.md` §10c and `docs/BUNDLE-OPTIMISATION-REPORT.md` §5–8 for the design and measured results.
 
 **Per the governing instruction, no Phase 8 work has begun. This report awaits review and approval before any further implementation.**
