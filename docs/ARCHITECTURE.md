@@ -36,7 +36,8 @@ src/
   content/
     modules.ts         13 sections incl. the Learning Academy entry (single source for nav, routes, pathway)
     academy/           Learning Academy (Phase 6), see §10: types, catalogue (15 courses), s1/ (course S1: 6 modules,
-                       20 lessons), glossary, logic (marking, completion, unlock, competency), routes (+ tests)
+                       20 lessons), f3/ (course F3: 5 modules, 19 lessons, Phase 8), f5/ (course F5: 4 modules,
+                       11 lessons, Phase 8), glossary, logic (marking, completion, unlock, competency), routes (+ tests)
     buildProjects.ts   the eight Build Your Own Inverter projects (Phase 6): architecture, roles, options, questions,
                        troubleshooting faults, safety; suggestSelection
     componentCatalogue.ts   the 24 components (index)
@@ -45,7 +46,7 @@ src/
                          testing.ts       test procedures per component (virtual instruments, safety, readings)
                          comparisons.ts   curated comparison guides with understanding checks
                          index.ts         COMPONENTS, COMPONENT_BY_ID, PANEL_ENTRY_BY_ID (+ tests)
-    instruments/       virtual instrument registry and shared safety precautions
+    instruments/       virtual instrument registry and shared safety precautions (content/instruments/, metadata only)
     lessonCriteria.ts  completion criteria for lessons earned by doing (3D Lab and Library)
     models/            3D inverter model registry: lf3k.ts, sq1k.ts, index.ts
     badges.ts          9 badges (pure predicates over progress)
@@ -58,6 +59,8 @@ src/
                        generate (project circuits, assembly steps, zones, probes), assembly (step verification),
                        testing (engineering test suite), kit (parts kit, design sync) (+ tests)
   engine/solar/ faults/    (Phases 7, 9)
+  engine/instruments/  Phase 8 virtual-instrument engines: scope, dmm, clamp, esrLcr, battery, insulation,
+                       componentTester, index (+ INSTRUMENT_SCENARIO_IDS) (+ tests)
   store/               progressStore.ts, idbStorage.ts, selectors.ts, sanitize.ts (validate + merge), id.ts (+ tests)
   ui/                  primitives, Icon, ErrorBoundary, symbols/ (IEC schematic symbols for all 24 components)
   features/
@@ -83,7 +86,9 @@ src/
                        KitToolbox, buildStore, useProject, suite.worker + useSuite, report
     academy/           AcademyPages (catalogue, course, lesson, quiz, assignment, exam, record), Rich (lesson text +
                        glossary), QuestionSet, diagrams (17 computed diagrams + schematics), Demos, AcademyBanner
-    solar/ instruments/ repair/ assessments/   (Phases 7–10)
+    instruments/       Virtual Instruments Laboratory (Phase 8): InstrumentsLabPage.tsx (route entry, React.lazy,
+                       gated), one panel per instrument (Dmm/Clamp/Scope/Esr/Lcr/Battery/Insulation/ComponentTester)
+    solar/ repair/ assessments/   (Phases 7, 9–10)
 docs/ARCHITECTURE.md, docs/CURRICULUM-BLUEPRINT.md, docs/PHASE-N-PLAN.md, docs/PHASE-N-REPORT.md
 ```
 
@@ -314,6 +319,25 @@ The true per-course splitting flagged here as a follow-up was requested and comp
 
 Verification (measured sizes, chunk-isolation checks and regression results): `docs/BUNDLE-OPTIMISATION-REPORT.md` §5–7.
 
+## 10d. Virtual instruments and F3/F5 (Phase 8)
+
+Phase 8's authorisation named F5 and S4.M1, but S4 is a Phase 13 course per the roadmap (§13) and the curriculum blueprint's own course table assigns Phase 8 to **F3 and F5** — confirmed with the requester before authoring began. Phase 8 therefore authored F3 (AC Electrical Fundamentals) and F5 (Measurement and Virtual Instruments) in full, and built the eight virtual instruments both courses rely on. S4 is untouched and remains scheduled for Phase 13.
+
+**Instrument engine (`engine/instruments/`)** — one module per instrument, each a pure function of its inputs, independent of any UI framework:
+- `scope.ts` — `captureScope(settings)` reuses the Phase 5 transient engine's own `instantaneous(kind, params, t)` waveform function directly (`engine/waveform/waveforms.ts`), so the oscilloscope reads the same waveform model the rest of the simulator uses, then derives RMS/peak/peak-to-peak/average/period/frequency/duty-cycle by dense sampling — a genuine, not fabricated, measurement.
+- `esrLcr.ts`, `componentTester.ts` — reuse the Phase 3 component library's real `TEST_PROCEDURES` reference values (`content/components/testing.ts`) as the ground truth for ESR/LCR/diode-test readings, rather than inventing a second set of numbers.
+- `dmm.ts`, `clamp.ts` — realistic, Ohm's-law-consistent **preset scenarios**, not a live reading of the student's own circuit-lab state. This is a documented simplification (PHASE-8-REPORT.md): building a live bridge from an arbitrary saved circuit-lab document to a multimeter probe was judged too large an integration for this phase, and the authorisation explicitly allows a clearly identified educational approximation where full integration is not feasible.
+- `battery.ts` — a genuine equivalent-circuit model (`V_loaded = OCV(SoC) − I·R_int`, chemistry-specific OCV curves for lead-acid and LiFePO4, coulomb-counting capacity test) — parameter-driven physics, not fabricated numbers, though it is a simplified model and not wired into S2's own solar/battery engine state (flagged in PHASE-8-REPORT.md).
+- `insulation.ts` — explicitly simulation-and-safety-instruction only, per the authorisation's safety requirement; its UI gates the (simulated) measurement behind an explicit safety-procedure checklist rather than a passive disclaimer.
+
+**Instrument UI (`features/instruments/`)** — `InstrumentsLabPage.tsx` is the lazy-loaded `/instruments/*` route (added to `App.tsx`'s route table and its generic-module exclusion list), gated like any other practical area (`gates.ts`'s `PracticalArea` gained `'instrument'`), with one panel component per instrument. `content/modules.ts`'s `instruments` module entry moved from `status: 'planned'` to `'live'`.
+
+**Content model extension.** `ToolLink` gained an `'instrument'` variant (`{ kind: 'instrument', id, scenario? }`, with a route and a `linkExists()` case checking `INSTRUMENTS`/`INSTRUMENT_SCENARIO_IDS`), so F3 and F5 lessons link into specific instruments and scenarios the same way earlier courses link into the library, circuit lab or simulator. No new `DIAGRAM_IDS` or `DemoId` entries were needed — both courses reuse existing ids.
+
+**F3 and F5 authoring** followed §10c's per-course loading exactly: `content/academy/f3/` and `content/academy/f5/` (5 and 4 modules), each added to `COURSE_CONTENT` in `courseLoader.ts` and to `COURSES` in `catalogue.ts`, each lesson meeting the full 14-section lesson standard (`academy.test.ts`'s depth checks) as F1/F2/S1/S2 already do. `shells.ts` was regenerated once, after both courses were wired in, to avoid regenerating twice.
+
+**A blueprint gap found during authoring.** The curriculum blueprint's F3 lesson table marks several lessons with ★ as reusing existing Fundamentals-module activities (`fun-01`, `fun-05`, `fun-06` in `content/modules.ts`/`fundamentalsCriteria.ts`). No prior course (F1, F2, S1, S2) ever linked to a `fun-*` lesson, and `ToolLink`/`linkExists()` has no case for one — the cross-reference was a planning note, not built infrastructure. Building that link kind was judged out of scope for Phase 8 (the authorisation's own integration requirements name the simulation engine and component library, not the standalone Fundamentals module), so F3 links its ★-marked sim/circuit activities (`sim-03`, `sim-04`, `sim-08`, `ckt-04`, `ckt-05`, `ckt-07` — all of which do have real `ToolLink` support) but does not link the three `fun-*` lessons. Documented as a limitation in PHASE-8-REPORT.md rather than worked around silently.
+
 ## 11. Persistence and robustness
 
 - Progress is a single `ProgressData` record (schema v1) in IndexedDB under `inverter-lab-progress`, kept in memory if storage is unavailable.
@@ -345,7 +369,7 @@ Verification (measured sizes, chunk-isolation checks and regression results): `d
 | 5 | Electrical simulation engine: transient MNA, AC analysis, PWM/SPWM, switching, thermal estimate, oscilloscope, ten experiments, Fundamentals lessons | **Done** (see PHASE-5-REPORT.md) |
 | 6 | Build Your Own Inverter (eight projects, design engine, test suite) + Learning Academy framework and course S1 | **Done** (see PHASE-6-REPORT.md) |
 | 7 | F1 and F2 fully authored; prerequisite gates; Solar and Hybrid Engineering Laboratory and course S2 | **Done** (see PHASE-7-REPORT.md) |
-| 8 | Virtual instruments bound to the simulation + F5, S4.M1 | Next (awaiting approval) |
+| 8 | Virtual instruments bound to the simulation + F3, F5 | **Done** (see PHASE-8-REPORT.md) |
 | 9 | Repair workshop (17 scenarios) + S4 | |
 | 10 | Assessments, projects, final integration | |
 | 11 | Battery Engineering and Energy Storage | |
@@ -359,7 +383,7 @@ Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warning
 
 - Five sections still show only their syllabus; their workspaces arrive in the phases above.
 - One badge and the troubleshooting counter depend on later phases (labelled in the UI).
-- Learning Academy: F1, F2, S1 and S2 are authored and published; the other eleven courses show their syllabus as "scheduled". Written homework and assignment parts are self-reviewed against model answers (not stored or teacher-marked). Records are per browser; there is no teacher or institution account.
+- Learning Academy: F1, F2, F3, F5, S1 and S2 are authored and published; the other nine courses show their syllabus as "scheduled". Written homework and assignment parts are self-reviewed against model answers (not stored or teacher-marked). Records are per browser; there is no teacher or institution account.
 - Solar laboratory: the single-diode model and sizing method are an educational estimate with typical allowances (stated throughout the UI and reports), not a certified design; example PV modules and all other illustrative component values are explicitly labelled and never presented as manufacturer datasheets. The dispatch simulation uses a clear-sky model with a per-day weather scaling factor, not real weather or an hourly solar-resource dataset. The P&O MPPT demonstration can settle on a local peak under partial shading, as the real algorithm does — this is a teaching point, not a bug.
 - Code splitting: **fully resolved, see §10b–10c.** `logic.ts` and the Academy pages no longer import the full course catalogue anywhere; every prerequisite gate, the dashboard banner, the catalogue listing and every cross-course reference read lightweight course shells (`shells.ts`), and each authored course (F1, F2, S1, S2) loads its own content from its own chunk, on demand, only when a student opens that specific course (`courseLoader.ts`/`useCourse.ts`). Opening one course never fetches another's content. Add one line to `courseLoader.ts` per course as Phases 8–14 author more — no other change is needed for the architecture to keep scaling.
 - Build projects use simplified models, all labelled in the UI:
@@ -373,7 +397,7 @@ Gate for every phase: `npm run typecheck`, `npm test`, `npm run lint` (0 warning
 - 3D parts are educational representations built from primitives: proportions and pinouts follow real packages, but surface detail is simplified.
 - In the guided procedure, soldered parts are "removed" individually for inspection; in a real repair, boards are usually replaced as a unit (stated in the instructions).
 - Discharge pulse capacity uses a simplified rated W × 5 s rule. The dashboard waveform bench still shows ideal formula waveforms (labelled); circuit waveforms now come from the transient engine.
-- Test-procedure readings are representative teaching values; interactive instruments connected to the simulation arrive in Phase 8.
+- Test-procedure readings are representative teaching values. Phase 8 added interactive virtual instruments (§10d); the oscilloscope and the ESR/LCR/diode/component-tester instruments read real simulation and component-reference data, while the DMM and clamp meter use realistic, internally consistent preset scenarios rather than a live connection to the student's own circuit-lab state (see §10d and PHASE-8-REPORT.md for the limitation).
 - Transient engine: piecewise-linear semiconductors with instantaneous switching and ideal gates (no gate charge, no reverse recovery). There is no transformer saturation or leakage inductance, and no capacitor ESR. Fuses and breakers use a simplified I²t model; relays have no operate time. Switching loss uses a typical t_sw parameter; T_j is a steady-state estimate without thermal capacitance. The step is fixed, so PWM edges are quantised to h (≤ 0.5 % of a period with the automatic step), and events faster than h carry a reported energy error. Battery state of charge is not modelled yet.
 - Circuit editor: wires use a simple orthogonal route and may cross parts.
 - "Studied" means an entry or 3D panel was opened; reading depth is not measured.

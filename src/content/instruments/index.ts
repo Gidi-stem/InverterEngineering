@@ -11,6 +11,8 @@ export const INSTRUMENTS: Record<InstrumentId, { name: string; short: string; de
   'earth-bond': { name: 'Earth-continuity tester', short: 'Earth bond', description: 'Measures low resistance of protective-earth paths, often with a higher test current than a multimeter.' },
   thermal: { name: 'Thermal camera / thermocouple', short: 'Thermal', description: 'Measures surface temperature to find hot spots under load.' },
   psu: { name: 'Bench power supply (current-limited)', short: 'Bench PSU', description: 'Provides a controlled, current-limited voltage to power a part safely on the bench.' },
+  battery: { name: 'Battery tester and capacity analyser', short: 'Battery tester', description: 'Measures open-circuit and loaded voltage, internal resistance and discharge capacity (Ah, Wh) of a battery.' },
+  'component-tester': { name: 'Component tester', short: 'Comp. tester', description: 'A guided, semi-automatic health check (good / degraded / open / shorted) for diodes, transistors, relays and fuses, in place of reading raw diode/ohms values by hand.' },
 }
 
 /** Shared safety preconditions. Procedures list the keys that apply; the text is written once here. */

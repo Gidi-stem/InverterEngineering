@@ -109,6 +109,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   'voltage-divider': { term: 'Voltage divider', def: 'Two resistors in series across a voltage; the voltage at their junction is V·R₂/(R₁ + R₂).' },
   'time-constant': { term: 'Time constant (τ)', def: 'The characteristic time of an RC (τ = RC) or RL (τ = L/R) circuit. After one τ a charging quantity reaches 63 % of its change; after 5τ it is effectively complete.' },
   diode: { term: 'Diode', def: 'A semiconductor device that conducts current in one direction (anode to cathode) once its forward voltage is exceeded, and blocks it in the other.' },
+  phase: { term: 'Phase', def: 'Where a periodic waveform sits in its cycle at a given instant, usually expressed in degrees or radians. Two waveforms of the same frequency can have a fixed phase difference between them.' },
+  reactance: { term: 'Reactance (X)', def: 'The frequency-dependent AC opposition to current from a capacitor or inductor, in ohms. Unlike resistance it causes a 90° phase shift and does not dissipate energy as heat.' },
+  impedance: { term: 'Impedance (Z)', def: 'The total AC opposition to current from a combination of resistance and reactance, Z = √(R² + X²), in ohms, with an associated phase angle φ = arctan(X/R).' },
+  resonance: { term: 'Resonance', def: 'The condition in an LC circuit where inductive and capacitive reactance are equal and cancel, leaving only resistance to oppose current, at the resonant frequency f₀ = 1/(2π√(LC)).' },
   led: { term: 'LED', def: 'Light-emitting diode: a diode that emits light when forward current flows. Its current must be limited, usually by a series resistor.' },
   'voltage-drop': { term: 'Voltage drop', def: 'The voltage lost along a conductor or component, V = I·R. In DC systems long, thin cables waste power and starve the load.' },
   ampacity: { term: 'Current-carrying capacity (I_z)', def: 'The current a cable can carry continuously without exceeding its insulation’s temperature limit, for its installation method and ambient (from cable tables).' },
@@ -140,6 +144,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   'string-fuse': { term: 'String fuse', def: 'A fuse in each parallel PV string that protects it from reverse current fed by the other strings during a fault.' },
   'grid-tied': { term: 'Grid-tied system', def: 'A PV system whose inverter feeds the grid and the site’s loads, without a battery; it must stop when the grid fails (anti-islanding).' },
   certification: { term: 'Certification', def: 'Formal confirmation by an accredited body that a product or installation meets the applicable standards. Educational simulation never certifies anything.' },
+  accuracy: { term: 'Accuracy', def: 'How close a measured value is to the true value, usually stated as "± (% of reading + a number of digits)".' },
+  resolution: { term: 'Resolution', def: "The smallest change an instrument's display can show — the value of its last digit." },
+  precision: { term: 'Precision', def: 'How repeatable a set of readings is, independent of whether they are accurate.' },
+  'cat-rating': { term: 'CAT rating (measurement category)', def: 'A rating (CAT I–IV) of how large a transient voltage a meter, its leads and probes can safely withstand at a given point in a power system.' },
 }
 
 /** Extract every [[id]] / [[id|text]] glossary reference in a text. */

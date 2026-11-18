@@ -24,6 +24,8 @@ export function routeOf(l: ToolLink): string {
       return `/circuit-lab?ex=${l.project}`
     case 'solar':
       return l.tab === 'design' ? '/solar' : `/solar?tab=${l.tab}`
+    case 'instrument':
+      return `/instruments/${l.id}${l.scenario ? `?scenario=${l.scenario}` : ''}`
   }
 }
 

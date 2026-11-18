@@ -27,11 +27,11 @@ It also identifies the educational gaps in Phases 1–5 and schedules the work t
 
 | Course | Title | Level | Required prerequisites | Recommended | Main platform resources | Authored in |
 |---|---|---|---|---|---|---|
-| F1 | Electrical Safety and Fundamentals | Beginner | none (**mandatory first course**) | — | Academy practical assessments (isolation drill, prove-dead drill, hazard identification, protection sizing), 3D lab (view), library (fuse, breaker, PE) | Phase 7 |
-| F2 | DC Electrical Systems and Fundamentals | Beginner | F1 | — | Circuit lab (ckt-01…03), simulator (sim-01, sim-02), academy calculation tasks | Phase 7 |
-| F3 | AC Electrical Fundamentals | Beginner | F2 | — | Simulator (AC source, AC analysis, sim-03), waveform bench, transformer models, Phase 8 instruments | Phase 8 |
+| F1 | Electrical Safety and Fundamentals | Beginner | none (**mandatory first course**) | — | Academy practical assessments (isolation drill, prove-dead drill, hazard identification, protection sizing), 3D lab (view), library (fuse, breaker, PE) | **Phase 7 (done)** |
+| F2 | DC Electrical Systems and Fundamentals | Beginner | F1 | — | Circuit lab (ckt-01…03), simulator (sim-01, sim-02), academy calculation tasks | **Phase 7 (done)** |
+| F3 | AC Electrical Fundamentals | Beginner | F2 | — | Simulator (AC source, AC analysis, sim-03/04/08), waveform bench, transformer models (ckt-07), Phase 8 instruments | **Phase 8 (done)** |
 | F4 | Electronic Components for Inverter Engineering | Beginner → Intermediate | F2 | F3 | Component library (24 entries, test procedures, comparisons), 3D lab, circuit lab, Phase 9 workshop | Phase 9 |
-| F5 | Measurement and Virtual Instruments | Beginner → Intermediate | F1, F2 | F3 | Phase 8 virtual instruments, library test procedures, simulator oscilloscope | Phase 8 |
+| F5 | Measurement and Virtual Instruments | Beginner → Intermediate | F1, F2 | F3 | Phase 8 virtual instruments, library test procedures, simulator oscilloscope | **Phase 8 (done)** |
 | P1 | Circuit Analysis and Construction | Intermediate | F2 | F4 | Circuit lab (editor, checks, exercises ckt-01…10) | Phase 10 |
 | P2 | Power Electronics Fundamentals | Intermediate | F3, P1 | F4 | Simulator (sim-03…08), circuit lab, thermal and loss tools | Phase 10 |
 | P3 | Inverter Principles | Intermediate | P2 | — | Simulator (sim-08…10), waveform bench, Fundamentals lessons fun-01…07 | Phase 10 |
@@ -79,11 +79,13 @@ F1 passes at 80 % (quizzes and examination), reflecting its safety role.
 ### F3 AC Electrical Fundamentals (Beginner)
 | Module | Lessons | Tools |
 |---|---|---|
-| F3.M1 Alternating quantities | L1 Why AC is used (fun-01) · L2 Sine waves: amplitude, period, frequency, phase · L3 Peak, average and RMS (derivation of V_pk/√2) · L4 Non-sinusoidal waveforms (square, modified, PWM) | Waveform bench, simulator AC source + oscilloscope |
-| F3.M2 Reactance and impedance | L1 Capacitive reactance · L2 Inductive reactance · L3 Impedance and phasors (with complex numbers introduced gently) · L4 Resonance and filters (AC analysis Bode) | Simulator AC analysis (Bode) |
-| F3.M3 AC power | L1 Real, reactive and apparent power (fun-06) · L2 Power factor and current lag · L3 Harmonics and THD (fun-05) · L4 Energy returned by reactive loads ★ (sim-08) | sim-08 ★, spectrum view |
-| F3.M4 Transformers | L1 Mutual induction and turns ratio · L2 Ideal vs real transformers (winding resistance, magnetising current, saturation) · L3 Isolation and safety · L4 Transformer connection ★ (ckt-07) | ckt-07 ★, 3D T1, library transformer |
-| F3.M5 Rectification | L1 Half-wave and full-wave · L2 Bridge rectifier ★ (sim-03, ckt-04) · L3 Smoothing and ripple ★ (sim-04, ckt-05) | sim-03/04 ★, ckt-04/05 ★ |
+| F3.M1 Alternating quantities | L1 Why AC is used (fun-01†) · L2 Sine waves: amplitude, period, frequency, phase · L3 Peak, average and RMS (derivation of V_pk/√2) · L4 Non-sinusoidal waveforms (square, modified, PWM) | Waveform bench, simulator AC source + oscilloscope, build bld-b/bld-d |
+| F3.M2 Reactance and impedance | L1 Capacitive reactance · L2 Inductive reactance · L3 Impedance and phasors (with complex numbers introduced gently) · L4 Resonance and filters (AC analysis Bode) | Library capacitor/inductor + LCR meter, build bld-d |
+| F3.M3 AC power | L1 Real, reactive and apparent power (fun-06†) · L2 Power factor and current lag · L3 Harmonics and THD (fun-05†) · L4 Energy returned by reactive loads ★ (sim-08) | sim-08 ★ (linked) |
+| F3.M4 Transformers | L1 Mutual induction and turns ratio · L2 Ideal vs real transformers (winding resistance, magnetising current, saturation) · L3 Isolation and safety · L4 Transformer connection ★ (ckt-07) | ckt-07 ★ (linked), library transformer, insulation tester |
+| F3.M5 Rectification | L1 Half-wave and full-wave · L2 Bridge rectifier ★ (sim-03, ckt-04) · L3 Smoothing and ripple ★ (sim-04, ckt-05) | sim-03/04 ★ (linked), ckt-04/05 ★ (linked) |
+
+**Authored (Phase 8):** all ★ cross-references into the simulator (`sim-*`) and circuit lab (`ckt-*`) are live `ToolLink`s in the authored lessons. †The three `fun-*` Fundamentals-module references have no corresponding link — no course has ever linked into the standalone Fundamentals module (`content/modules.ts`), and `ToolLink`/`linkExists()` has no case for one; building that link kind was judged out of scope for Phase 8 (see ARCHITECTURE.md §10d and PHASE-8-REPORT.md). F3.M1.L1, F3.M3.L1 and F3.M3.L3 instead link the Virtual Instruments lab, library and component entries that cover the same ground.
 
 ### F4 Electronic Components for Inverter Engineering (Beginner → Intermediate)
 | Module | Lessons | Tools |
@@ -294,8 +296,8 @@ The ten original development phases are retained and four are added. **Every cou
 |---|---|---|---|
 | 1–5 | Foundation, 3D lab, library, circuit lab, simulation engine | (mapped in §6; taught by the courses below) | Done |
 | 6 | Build Your Own Inverter; Academy framework | **S1** | Done |
-| 7 | Solar and Hybrid Engineering Laboratory; prerequisite enforcement; practical assessments | **F1, F2** (first, mandatory), **S2** | In progress |
-| 8 | Virtual instruments bound to the simulation | **F3, F5** | |
+| 7 | Solar and Hybrid Engineering Laboratory; prerequisite enforcement; practical assessments | **F1, F2** (first, mandatory), **S2** | Done |
+| 8 | Virtual instruments bound to the simulation | **F3, F5** | Done |
 | 9 | Repair workshop (17 scenarios) | **F4, P4** | |
 | 10 | Assessments and engineering projects | **P1, P2, P3** | |
 | 11 | Battery Engineering and Energy Storage (battery laboratory) | **P5** | |

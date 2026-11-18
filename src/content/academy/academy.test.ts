@@ -7,6 +7,9 @@ import { CIRCUIT_EXERCISE_BY_ID } from '../circuitExercises'
 import { COMPONENT_BY_ID } from '../components'
 import { COMPARISON_BY_ID } from '../components/comparisons'
 import { TEST_PROCEDURES } from '../components/testing'
+import { INSTRUMENTS } from '../instruments'
+import { INSTRUMENT_SCENARIO_IDS } from '../../engine/instruments'
+import type { InstrumentId } from '../../types/domain'
 import { MODEL_BY_ID } from '../models'
 import { MODULES } from '../modules'
 import { SIM_EXPERIMENT_BY_ID } from '../simExperiments'
@@ -43,6 +46,8 @@ function linkExists(l: ToolLink): boolean {
       return !!BUILD_PROJECT_BY_ID[l.project]
     case 'solar':
       return (SOLAR_TABS as readonly string[]).includes(l.tab)
+    case 'instrument':
+      return !!INSTRUMENTS[l.id as InstrumentId] && (!l.scenario || (INSTRUMENT_SCENARIO_IDS[l.id] ?? []).includes(l.scenario))
   }
 }
 
@@ -309,8 +314,9 @@ describe('progression, completion and competency', () => {
     p = at(p, { kind: 'exam', ref: 'S1', score: 18, max: 20 })
     expect(level(p)).toBe('virtual-competency')
     // Scheduled courses' competencies are reported as not yet available; published ones are.
-    expect(competencyRecord(p).find((c) => c.id === 'CU-03')!.available).toBe(false)
+    expect(competencyRecord(p).find((c) => c.id === 'CU-04')!.available).toBe(false)
     expect(competencyRecord(p).find((c) => c.id === 'CU-01')!.available).toBe(true)
+    expect(competencyRecord(p).find((c) => c.id === 'CU-03')!.available).toBe(true)
     expect(competencyRecord(p).find((c) => c.id === 'CU-15')).toBeDefined()
   })
 })

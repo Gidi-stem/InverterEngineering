@@ -10,4 +10,5 @@ export const to = {
   sim: (label: string, exp: string): ToolLink => ({ kind: 'sim', label, exp }),
   build: (label: string, project: string): ToolLink => ({ kind: 'build', label, project }),
   solar: (label: string, tab: SolarTab = 'design'): ToolLink => ({ kind: 'solar', label, tab }),
+  instrument: (label: string, id: string, scenario?: string): ToolLink => ({ kind: 'instrument', label, id, scenario }),
 }

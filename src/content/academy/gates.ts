@@ -10,7 +10,7 @@ import { courseComplete } from './logic'
  * Study (library reading, exploring the 3D models, academy lessons) is never gated here.
  * A gate course that is not yet published is not enforced (it cannot be passed).
  */
-export type PracticalArea = 'circuit' | 'build' | 'solar' | 'lab3d-procedure'
+export type PracticalArea = 'circuit' | 'build' | 'solar' | 'lab3d-procedure' | 'instrument'
 
 /** F2's own practical tasks in the circuit laboratory (F1 required). */
 export const F2_PRACTICAL_EXERCISES = ['ckt-01', 'ckt-02', 'ckt-03', 'sim-01', 'sim-02']

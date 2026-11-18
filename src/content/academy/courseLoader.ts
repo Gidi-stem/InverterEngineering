@@ -17,6 +17,8 @@ const COURSE_CONTENT: Record<string, Loader> = {
   F2: () => import('./f2').then((m) => m.F2),
   S1: () => import('./s1').then((m) => m.S1),
   S2: () => import('./s2').then((m) => m.S2),
+  F3: () => import('./f3').then((m) => m.F3),
+  F5: () => import('./f5').then((m) => m.F5),
 }
 
 const cache = new Map<string, Course>()

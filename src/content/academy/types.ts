@@ -18,6 +18,7 @@ export type ToolLink =
   | { kind: 'sim'; label: string; exp: string }
   | { kind: 'build'; label: string; project: string }
   | { kind: 'solar'; label: string; tab: SolarTab }
+  | { kind: 'instrument'; label: string; id: string; scenario?: string }
 
 export const SOLAR_TABS = ['design', 'iv', 'energy', 'faults', 'commission'] as const
 export type SolarTab = (typeof SOLAR_TABS)[number]

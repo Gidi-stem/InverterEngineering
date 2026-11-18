@@ -1,6 +1,8 @@
 import type { AcademyModule, Competency, Course, Level, Stage } from './types'
 import { F1 } from './f1'
 import { F2 } from './f2'
+import { F3 } from './f3'
+import { F5 } from './f5'
 import { S1 } from './s1'
 import { S2 } from './s2'
 
@@ -27,13 +29,7 @@ export function scheduled(id: string, title: string, level: Level, stage: Stage,
 export const COURSES: Course[] = [
   F1,
   F2,
-  scheduled('F3', 'AC Electrical Fundamentals', 'beginner', 'foundation', 8, ['F2'], 'CU-03', 'Alternating quantities, RMS, reactance and impedance, AC power and power factor, harmonics, transformers and rectification.', [
-    ['Alternating quantities', ['Why AC is used', 'Sine waves: amplitude, period, frequency, phase', 'Peak, average and RMS', 'Non-sinusoidal waveforms']],
-    ['Reactance and impedance', ['Capacitive reactance', 'Inductive reactance', 'Impedance and phasors', 'Resonance and filters']],
-    ['AC power', ['Real, reactive and apparent power', 'Power factor and current lag', 'Harmonics and THD', 'Energy returned by reactive loads']],
-    ['Transformers', ['Mutual induction and turns ratio', 'Ideal and real transformers', 'Isolation and safety', 'Transformer connection']],
-    ['Rectification', ['Half-wave and full-wave rectification', 'The bridge rectifier', 'Smoothing and ripple']],
-  ]),
+  F3,
   scheduled('F4', 'Electronic Components for Inverter Engineering', 'beginner', 'foundation', 9, ['F2'], 'CU-04', 'Passive, semiconductor, magnetic, protection, control, sensing and thermal components: how they work, their ratings, how to test them and how to identify faults and replacements.', [
     ['Passive components', ['Resistors', 'Capacitors: electrolytic, film and ceramic', 'Inductors', 'Testing passive components']],
     ['Semiconductor devices', ['Introduction to semiconductors', 'Diodes', 'Rectification with diodes', 'MOSFETs', 'IGBTs', 'Gate drivers', 'Switching characteristics', 'Component testing', 'Fault identification', 'Component replacement']],
@@ -41,12 +37,7 @@ export const COURSES: Course[] = [
     ['Protection and switching devices', ['Fuses', 'Circuit breakers', 'Relays and contactors', 'Relays versus semiconductor switches']],
     ['Control, sensing and thermal', ['PWM controllers and microcontrollers', 'Voltage and current sensing', 'Heat sinks, fans and thermal resistance', 'PCBs, connectors and terminals']],
   ]),
-  scheduled('F5', 'Measurement and Virtual Instruments', 'beginner', 'foundation', 8, ['F1', 'F2'], 'CU-05', 'Accuracy and uncertainty, measurement categories, the multimeter, clamp meter, oscilloscope and specialist instruments, used on live simulations.', [
-    ['Measurement basics', ['Accuracy, resolution and uncertainty', 'Measurement categories and probe safety', 'Recording results']],
-    ['Multimeter and clamp meter', ['Voltage, current, resistance, continuity and diode test', 'Clamp meters and DC/AC current']],
-    ['Oscilloscope', ['Time base, volts per division and trigger', 'Measuring frequency, duty and RMS', 'Spectrum and THD']],
-    ['Specialist instruments', ['Insulation resistance testing', 'LCR and ESR meters', 'Thermal imaging and temperature probes']],
-  ]),
+  F5,
   scheduled('P1', 'Circuit Analysis and Construction', 'intermediate', 'practitioner', 10, ['F2'], 'CU-06', 'Reading schematics, nodal analysis, Thevenin and Norton equivalents, non-linear devices, building and fault-finding circuits, and switching circuits up to the H-bridge.', [
     ['Reading schematics', ['Symbols and pin identification', 'Nodes and the connection graph', 'Reference (ground) and measurement']],
     ['Analysis methods', ['Nodal analysis by hand', 'Thevenin and Norton equivalents', 'Superposition', 'Non-linear devices and piecewise-linear models']],

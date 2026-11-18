@@ -65,7 +65,7 @@ export interface ElectronicComponent {
 
 // ───────────── Test procedures (virtual instruments) ─────────────
 
-export type InstrumentId = 'dmm' | 'scope' | 'clamp' | 'lcr' | 'esr' | 'insulation' | 'earth-bond' | 'thermal' | 'psu'
+export type InstrumentId = 'dmm' | 'scope' | 'clamp' | 'lcr' | 'esr' | 'insulation' | 'earth-bond' | 'thermal' | 'psu' | 'battery' | 'component-tester'
 
 /** Reusable safety preconditions; each procedure lists the ones that apply. */
 export type SafetyKey = 'isolate' | 'discharge' | 'esd' | 'live-qualified' | 'pv-daylight' | 'battery-short' | 'hot' | 'heavy' | 'cat-rated' | 'current-limit'
