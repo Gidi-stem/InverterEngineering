@@ -141,8 +141,12 @@ function buildPrims(doc: CircuitDoc, topo: Topology, mode: SimMode, st: DeviceSt
     }
   }
   for (const inj of ov.inject ?? []) {
-    const p = doc.parts.find((x) => x.id === inj.partId)
-    if (p) prims.push({ k: 'isrc', part: inj.partId, tag: 'inject', into: N(p, inj.plus), outOf: N(p, inj.minus), I: inj.amps })
+    if ('nodeA' in inj) {
+      prims.push({ k: 'isrc', part: 'probe', tag: 'inject', into: inj.nodeA, outOf: inj.nodeB, I: inj.amps })
+    } else {
+      const p = doc.parts.find((x) => x.id === inj.partId)
+      if (p) prims.push({ k: 'isrc', part: inj.partId, tag: 'inject', into: N(p, inj.plus), outOf: N(p, inj.minus), I: inj.amps })
+    }
   }
   return { prims, extra }
 }
@@ -387,4 +391,21 @@ export function defaultModes(doc: CircuitDoc): SimMode[] {
     : doc.parts.some((p) => p.type === 'gate-source') && doc.parts.some((p) => p.type === 'transformer')
       ? [{ kind: 'ac-snapshot', polarity: 1 }]
       : [{ kind: 'dc' }]
+}
+
+/**
+ * Resistance an ohmmeter would see between two nodes: the same two-solve Thevenin-resistance trick
+ * `exercises.ts` already uses for a single part's terminals (inject a small test current, divide
+ * the extra voltage it produces by the current), generalised to any two nodes so a probe can land
+ * on two different parts — exactly what two free meter leads do. No new solving logic: both solves
+ * go through `solveCircuit` above. Also returns the open-circuit voltage already present between
+ * the probes, so a caller can flag a live circuit the way a real ohmmeter cannot.
+ */
+export function measureResistance(doc: CircuitDoc, topo: Topology, nodeA: number, nodeB: number, mode: SimMode = { kind: 'dc' }): { ohms: number; openCircuitVolts: number } {
+  const s0 = solveCircuit(doc, topo, mode)
+  const v0 = (s0.nodeVoltages[nodeA] ?? 0) - (s0.nodeVoltages[nodeB] ?? 0)
+  const I = 1e-3
+  const s1 = solveCircuit(doc, topo, mode, { inject: [{ nodeA, nodeB, amps: I }] })
+  const v1 = (s1.nodeVoltages[nodeA] ?? 0) - (s1.nodeVoltages[nodeB] ?? 0)
+  return { ohms: (v1 - v0) / I, openCircuitVolts: v0 }
 }

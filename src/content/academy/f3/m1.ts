@@ -60,7 +60,7 @@ A battery or solar array is fundamentally a DC source: it has a fixed polarity a
           { mistake: 'Thinking higher voltage is dangerous, so transmission always uses lower voltage.', correction: 'Transmission deliberately uses high voltage to minimise current and loss; the resulting safety management (clearances, insulation, access control) is handled separately, not avoided.' },
         ],
         demo: { title: 'Revisit the H-bridge', text: 'The Circuit Connection Laboratory\'s H-bridge exercise is the switching core behind every inverter output waveform this course studies.', link: to.ckt('H-bridge exercise', 'ckt-09') },
-        activities: [to.ckt('Full H-bridge exercise', 'ckt-09'), to.lib('Transformer', 'transformer')],
+        activities: [to.ckt('Full H-bridge exercise', 'ckt-09'), to.lib('Transformer', 'transformer'), to.fun('Fundamentals: DC vs AC (fun-01)', 'fun-01')],
         check: [
           { id: 'k1', type: 'mcq', prompt: 'Why is power transmitted at high voltage?', options: ['To reduce current and therefore resistive loss for the same delivered power', 'Because generators can only produce high voltage', 'To make it safer to touch', 'To reduce the frequency'], answer: 0, explain: 'Loss = I²R; lower current at the same power sharply reduces loss.' },
           { id: 'k2', type: 'mcq', prompt: 'Why does AC pair naturally with transformers, while DC does not?', options: ['Transformers need a changing magnetic flux, which only alternating current provides continuously', 'Transformers only work below 100 V', 'DC is always more powerful', 'Transformers need high frequency only'], answer: 0, explain: 'A steady DC current gives a steady, non-inducing flux once established.' },

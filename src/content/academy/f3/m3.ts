@@ -68,7 +68,7 @@ An inverter must be sized to handle the APPARENT power (current) a reactive load
           { mistake: 'Adding P, Q and S arithmetically.', correction: 'They combine as the sides of a right triangle: S² = P² + Q², not a simple sum.' },
         ],
         demo: { title: 'Measure real inverter output quantities', text: 'The oscilloscope\'s RMS measurement and a clamp-meter current reading together give you everything needed to compute S; F3.M3.L2 adds the phase angle for P and Q.', link: to.instrument('Open the oscilloscope', 'scope') },
-        activities: [to.instrument('Oscilloscope', 'scope'), to.instrument('Clamp meter', 'clamp')],
+        activities: [to.instrument('Oscilloscope', 'scope'), to.instrument('Clamp meter', 'clamp'), to.fun('Fundamentals: real, reactive and apparent power (fun-06)', 'fun-06')],
         check: [
           { id: 'k1', type: 'numeric', prompt: 'Apparent power of 120 V rms at 15 A rms (VA)?', answer: 1800, tol: 0.01, unit: 'VA', explain: 'S = 120×15 = 1800 VA.' },
           { id: 'k2', type: 'mcq', prompt: 'For a purely resistive load, real power and apparent power are...', options: ['equal', 'always different', 'related by a fixed 2:1 ratio', 'unrelated'], answer: 0, explain: 'φ = 0° gives cos(φ) = 1, so P = S.' },
@@ -231,7 +231,7 @@ A small minority of sensitive loads (certain medical, audio, or precision measur
           { mistake: '"If total RMS current is within rating, there is no heating concern."', correction: 'Significant harmonic content can cause extra heating beyond what a standard RMS-based rating assumes.' },
         ],
         demo: { title: 'Compare clean and distorted current shapes', text: 'View a clean sinusoidal current versus a pulsed, harmonic-rich current shape on the oscilloscope to see the qualitative difference this lesson describes.', link: to.instrument('Open the oscilloscope', 'scope') },
-        activities: [to.instrument('Oscilloscope', 'scope'), to.lib('PWM controller', 'pwm-controller')],
+        activities: [to.instrument('Oscilloscope', 'scope'), to.lib('PWM controller', 'pwm-controller'), to.fun('Fundamentals: harmonics, THD and filtering (fun-05)', 'fun-05')],
         check: [
           { id: 'k1', type: 'mcq', prompt: 'Harmonic current is drawn by...', options: ['non-linear loads such as switching power supplies', 'only purely resistive loads', 'only when the supply voltage is distorted', 'never, in modern equipment'], answer: 0, explain: 'Non-linear internal rectification/switching draws a distorted current.' },
           { id: 'k2', type: 'mcq', prompt: 'True power factor differs from displacement power factor by also accounting for...', options: ['harmonic (current shape) distortion', 'supply frequency only', 'temperature', 'the inverter\'s brand'], answer: 0, explain: 'True PF includes both phase displacement and harmonic content.' },

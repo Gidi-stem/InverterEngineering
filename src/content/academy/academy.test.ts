@@ -11,7 +11,7 @@ import { INSTRUMENTS } from '../instruments'
 import { INSTRUMENT_SCENARIO_IDS } from '../../engine/instruments'
 import type { InstrumentId } from '../../types/domain'
 import { MODEL_BY_ID } from '../models'
-import { MODULES } from '../modules'
+import { MODULE_BY_ID, MODULES } from '../modules'
 import { SIM_EXPERIMENT_BY_ID } from '../simExperiments'
 import { COMPETENCIES, COURSE_BY_ID, COURSES } from './catalogue'
 import { GLOSSARY, glossaryRefs } from './glossary'
@@ -48,6 +48,8 @@ function linkExists(l: ToolLink): boolean {
       return (SOLAR_TABS as readonly string[]).includes(l.tab)
     case 'instrument':
       return !!INSTRUMENTS[l.id as InstrumentId] && (!l.scenario || (INSTRUMENT_SCENARIO_IDS[l.id] ?? []).includes(l.scenario))
+    case 'fundamentals':
+      return MODULE_BY_ID.fundamentals.lessons.some((x) => x.id === l.lessonId)
   }
 }
 

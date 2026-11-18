@@ -11,4 +11,5 @@ export const to = {
   build: (label: string, project: string): ToolLink => ({ kind: 'build', label, project }),
   solar: (label: string, tab: SolarTab = 'design'): ToolLink => ({ kind: 'solar', label, tab }),
   instrument: (label: string, id: string, scenario?: string): ToolLink => ({ kind: 'instrument', label, id, scenario }),
+  fun: (label: string, lessonId: string): ToolLink => ({ kind: 'fundamentals', label, lessonId }),
 }

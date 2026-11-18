@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { PART_DEFS } from '../../engine/circuit/parts'
 import { DIODE_TEST_CASES, DMM_SCENARIOS, type DmmFunction, type DmmPoint, type DmmPort, operateDiodeTest, operateDmm } from '../../engine/instruments/dmm'
+import { liveDmmSeriesPoint, liveDmmTwoProbePoint } from '../../engine/instruments/liveProbe'
+import { SANDBOX, useCircuitLab } from '../circuit-lab/circuitStore'
 import { Button, Panel, SafetyNotice, Tag } from '../../ui/primitives'
 
 const FUNCTIONS: { id: DmmFunction; label: string }[] = [
@@ -27,13 +30,41 @@ function Readout({ result }: { result: { ok: boolean; display: string; note: str
 }
 
 export default function DmmPanel() {
+  const [source, setSource] = useState<'preset' | 'live'>('preset')
   const [scenarioId, setScenarioId] = useState(DMM_SCENARIOS[0].id)
   const scenario = DMM_SCENARIOS.find((s) => s.id === scenarioId)!
   const [pointId, setPointId] = useState<string>(scenario.points[0].id)
-  const point: DmmPoint = scenario.points.find((p) => p.id === pointId) ?? scenario.points[0]
+  const presetPoint: DmmPoint = scenario.points.find((p) => p.id === pointId) ?? scenario.points[0]
   const [fn, setFn] = useState<DmmFunction>('dcv')
   const [port, setPort] = useState<DmmPort>('v-ohm')
   const [measured, setMeasured] = useState<ReturnType<typeof operateDmm> | null>(null)
+
+  // "Your circuit" mode: probe whatever the student has actually built in the Circuit Lab, using
+  // the lab's own saved docs (no separate circuit to maintain here).
+  const docs = useCircuitLab((s) => s.docs)
+  const workspaceKeys = useMemo(() => Object.keys(docs).filter((k) => docs[k]?.parts.length).sort(), [docs])
+  const [workspaceKey, setWorkspaceKey] = useState(SANDBOX)
+  const liveDoc = docs[workspaceKey]
+  const liveParts = liveDoc?.parts ?? []
+  const wantsCurrent = fn === 'dca' || fn === 'aca'
+  const [probePartId, setProbePartId] = useState('')
+  const [probeTerminalId, setProbeTerminalId] = useState('')
+  const [probeBPartId, setProbeBPartId] = useState('')
+  const [probeBTerminalId, setProbeBTerminalId] = useState('')
+  const probeTerminals = (pid: string) => (liveDoc?.parts.find((p) => p.id === pid) && PART_DEFS[liveDoc.parts.find((p) => p.id === pid)!.type].terminals) ?? []
+
+  const livePoint: DmmPoint = useMemo(() => {
+    if (!liveDoc || !probePartId) return { id: 'live', label: 'Pick a part to probe', isLive: false }
+    if (wantsCurrent) return liveDmmSeriesPoint(liveDoc, probePartId)
+    if (!probeBPartId) return { id: 'live', label: 'Pick a second probe point', isLive: false }
+    const aPart = liveDoc.parts.find((p) => p.id === probePartId)
+    const bPart = liveDoc.parts.find((p) => p.id === probeBPartId)
+    const aTerm = probeTerminalId || (aPart ? PART_DEFS[aPart.type].terminals[0]?.id : '1') || '1'
+    const bTerm = probeBTerminalId || (bPart ? PART_DEFS[bPart.type].terminals[0]?.id : '1') || '1'
+    return liveDmmTwoProbePoint(liveDoc, { partId: probePartId, terminalId: aTerm }, { partId: probeBPartId, terminalId: bTerm })
+  }, [liveDoc, probePartId, probeTerminalId, probeBPartId, probeBTerminalId, wantsCurrent])
+
+  const point = source === 'preset' ? presetPoint : livePoint
 
   const [diodeCase, setDiodeCase] = useState(DIODE_TEST_CASES[0].id)
   const [diodeDir, setDiodeDir] = useState<'forward' | 'reverse'>('forward')
@@ -49,22 +80,74 @@ export default function DmmPanel() {
         <strong>Before you measure:</strong> check the function matches what you want (V, A, Ω), and the probes are in the socket that matches the function. Using a current socket for a voltage measurement on a live source can blow the meter's fuse.
       </SafetyNotice>
 
-      <Panel title="Scenario and test point">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-ink-300">
-            Circuit
-            <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={scenarioId} onChange={(e) => { setScenarioId(e.target.value); setPointId(DMM_SCENARIOS.find((s) => s.id === e.target.value)!.points[0].id); setMeasured(null) }}>
-              {DMM_SCENARIOS.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-            </select>
-          </label>
-          <label className="text-sm text-ink-300">
-            Test point
-            <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={pointId} onChange={(e) => { setPointId(e.target.value); setMeasured(null) }}>
-              {scenario.points.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
-          </label>
+      <Panel title="Where to measure">
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <Button variant={source === 'preset' ? 'primary' : 'secondary'} onClick={() => { setSource('preset'); setMeasured(null) }} data-testid="dmm-source-preset">Guided scenario</Button>
+          <Button variant={source === 'live' ? 'primary' : 'secondary'} onClick={() => { setSource('live'); setMeasured(null) }} data-testid="dmm-source-live">Your circuit</Button>
         </div>
-        <p className="mt-2 text-xs text-ink-500">{scenario.description} {point.isLive ? <Tag tone="caution">Live</Tag> : <Tag tone="neutral">Isolated</Tag>}</p>
+
+        {source === 'preset' ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-ink-300">
+                Circuit
+                <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={scenarioId} onChange={(e) => { setScenarioId(e.target.value); setPointId(DMM_SCENARIOS.find((s) => s.id === e.target.value)!.points[0].id); setMeasured(null) }}>
+                  {DMM_SCENARIOS.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                </select>
+              </label>
+              <label className="text-sm text-ink-300">
+                Test point
+                <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={pointId} onChange={(e) => { setPointId(e.target.value); setMeasured(null) }}>
+                  {scenario.points.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-ink-500">{scenario.description} {point.isLive ? <Tag tone="caution">Live</Tag> : <Tag tone="neutral">Isolated</Tag>}</p>
+          </>
+        ) : (
+          <>
+            <label className="text-sm text-ink-300">
+              Saved circuit (from the Circuit Lab)
+              <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={workspaceKey} onChange={(e) => { setWorkspaceKey(e.target.value); setProbePartId(''); setProbeBPartId(''); setMeasured(null) }}>
+                <option value={SANDBOX}>Sandbox</option>
+                {workspaceKeys.filter((k) => k !== SANDBOX).map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </label>
+            {!liveParts.length ? (
+              <p className="mt-2 text-xs text-ink-500">This saved circuit is empty — build something in the Circuit Lab first (or pick another saved circuit above).</p>
+            ) : (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="text-sm text-ink-300">
+                  {wantsCurrent ? 'Break the meter in series with' : 'Probe A (red lead)'}
+                  <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={probePartId} onChange={(e) => { setProbePartId(e.target.value); setProbeTerminalId(''); setMeasured(null) }}>
+                    <option value="">— select a part —</option>
+                    {liveParts.map((p) => <option key={p.id} value={p.id}>{p.label} ({p.type})</option>)}
+                  </select>
+                  {!wantsCurrent && probePartId && (
+                    <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={probeTerminalId} onChange={(e) => { setProbeTerminalId(e.target.value); setMeasured(null) }}>
+                      {probeTerminals(probePartId).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  )}
+                </label>
+                {!wantsCurrent && (
+                  <label className="text-sm text-ink-300">
+                    Probe B (black lead)
+                    <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={probeBPartId} onChange={(e) => { setProbeBPartId(e.target.value); setProbeBTerminalId(''); setMeasured(null) }}>
+                      <option value="">— select a part —</option>
+                      {liveParts.map((p) => <option key={p.id} value={p.id}>{p.label} ({p.type})</option>)}
+                    </select>
+                    {probeBPartId && (
+                      <select className="mt-1 w-full rounded-md border border-chassis-600 bg-chassis-900 px-2.5 py-2 text-sm text-ink-100" value={probeBTerminalId} onChange={(e) => { setProbeBTerminalId(e.target.value); setMeasured(null) }}>
+                        {probeTerminals(probeBPartId).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select>
+                    )}
+                  </label>
+                )}
+              </div>
+            )}
+            <p className="mt-2 text-xs text-ink-500">{point.label} {point.isLive ? <Tag tone="caution">Live</Tag> : <Tag tone="neutral">Isolated</Tag>}</p>
+          </>
+        )}
       </Panel>
 
       <Panel title="Meter controls">

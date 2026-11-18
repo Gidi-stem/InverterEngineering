@@ -26,6 +26,10 @@ export function routeOf(l: ToolLink): string {
       return l.tab === 'design' ? '/solar' : `/solar?tab=${l.tab}`
     case 'instrument':
       return `/instruments/${l.id}${l.scenario ? `?scenario=${l.scenario}` : ''}`
+    case 'fundamentals':
+      // Lessons aren't individually routable: the module page lists the whole sequence (and the
+      // lesson's own linked experiments), so the whole module is the correct, honest target.
+      return '/fundamentals'
   }
 }
 

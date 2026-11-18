@@ -135,8 +135,13 @@ export type SimMode = { kind: 'dc' } | { kind: 'ac-snapshot'; polarity: 1 | -1 }
 export interface SolveOverrides {
   /** Replace part states for this solve, e.g. gate high/low for a test case. */
   states?: Record<string, Record<string, number>>
-  /** Inject a test current into a part's terminals (used for Thevenin resistance). */
-  inject?: { partId: string; plus: string; minus: string; amps: number }[]
+  /**
+   * Inject a test current between two points (used for Thevenin resistance, and by the DMM/clamp
+   * live-circuit ohmmeter). Either name a single part's own two terminals, or — to probe between
+   * two different parts, as a real ohmmeter's two free leads do — give the two node ids directly
+   * (`topo.nodeOf.get(tkey(partId, terminalId))`).
+   */
+  inject?: (({ partId: string; plus: string; minus: string } | { nodeA: number; nodeB: number }) & { amps: number })[]
   /** Treat these parts as removed (open) for this solve. */
   remove?: string[]
 }
