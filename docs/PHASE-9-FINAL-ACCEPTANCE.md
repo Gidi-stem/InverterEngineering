@@ -4,7 +4,9 @@
 
 Baseline commit **d9fd3d5** (unchanged — confirmed `git log`/`git status` clean before and after writing this report; no files touched, no student progress affected). This report covers only the one remaining open item from Phase 9 acceptance: browser-based verification of F4, P4 and the Repair Workshop.
 
-**Browser automation is not available in this environment, and the limitation is structural, not a one-off failure:**
+> **Update:** the structural blocker described below (no public URL, no connected browser) was subsequently resolved with your approval — the build was deployed to GitHub Pages and driven with a real connected browser. See `docs/PHASE-9-BROWSER-VERIFICATION-RESULTS.md` for the actual test results, including what was and was not reached. The manual script below remains valid and reproducible for anyone testing locally; it is no longer the only verification on record.
+
+**Browser automation was not available in this environment at the time this section was written, and the limitation was structural, not a one-off failure:**
 
 1. `mcp__claude-in-chrome__list_connected_browsers` was called and reports the Chrome extension is **not connected** — there is no browser under this session's control right now.
 2. Even if a browser were connected, it would be the user's own Chrome (or the Claude desktop app's built-in browser) — a browser running on the user's machine. This coding session runs in an isolated cloud sandbox whose proxy configuration is **outbound-only** (confirmed via the agent-proxy status: it tunnels outbound HTTPS to an allow-listed set of hosts; there is no inbound tunnel or public URL for anything served from inside this sandbox). A locally-run `vite preview`/`vite dev` server here has no address reachable from outside the sandbox, so a browser on the user's computer could not reach it even once connected.
