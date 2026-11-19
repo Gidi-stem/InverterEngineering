@@ -32,6 +32,16 @@ export function markAll(qs: Question[], answers: Record<string, Answer>) {
   return { score: results.filter((r) => r.correct).length, max: qs.length, results }
 }
 
+/** Rebuilds a numeric question set's text-input display values from previously-recorded answers,
+ * so a practice `QuestionSet` (knowledge check, homework, assignment) can restore exactly what a
+ * student last submitted instead of opening blank. MCQ/multi answers don't need this — their
+ * selection state is driven directly from the restored `answers` map's option indices. */
+export function restoredText(qs: Question[], answers: Record<string, Answer>) {
+  const t: Record<string, string> = {}
+  for (const q of qs) if (q.type === 'numeric' && typeof answers[q.id] === 'number') t[q.id] = String(answers[q.id])
+  return t
+}
+
 /** Deterministic shuffle (mulberry32) so an attempt can be reproduced from its seed. */
 export function seededOrder(n: number, seed: number): number[] {
   let t = seed >>> 0

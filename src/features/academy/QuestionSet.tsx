@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { markAll, seededOrder, type Answer } from '../../content/academy/logic'
+import { markAll, restoredText, seededOrder, type Answer } from '../../content/academy/logic'
 import type { Question } from '../../content/academy/types'
 import { Button, Tag } from '../../ui/primitives'
 import { Inline } from './Rich'
@@ -20,17 +20,24 @@ interface Props {
   locked?: boolean
   /** Examination deadline (epoch ms): the set is submitted automatically when it passes. */
   deadline?: number
+  /**
+   * Previously-submitted answers to restore on mount (practice sets only — a quiz or exam attempt
+   * is always a fresh attempt, never resumed). When given, the set opens already marked, exactly as
+   * it was left after the last submission, instead of appearing blank under a "passed" status shown
+   * elsewhere on the page. "Try again" still clears it, same as before.
+   */
+  restore?: Record<string, Answer> | null
 }
 
 /**
  * A marked question set. Practice (knowledge checks, homework, assignments): feedback after each
  * check. Quiz: feedback after submission. Exam: no feedback until submitted, then the full review.
  */
-export function QuestionSet({ questions, mode, seed, onSubmit, allowRetry = true, testid, locked, deadline }: Props) {
+export function QuestionSet({ questions, mode, seed, onSubmit, allowRetry = true, testid, locked, deadline, restore }: Props) {
   const order = useMemo(() => (seed !== undefined && mode !== 'practice' ? seededOrder(questions.length, seed) : questions.map((_, i) => i)), [questions, seed, mode])
-  const [answers, setAnswers] = useState<Record<string, Answer>>({})
-  const [text, setText] = useState<Record<string, string>>({})
-  const [result, setResult] = useState<ReturnType<typeof markAll> | null>(null)
+  const [answers, setAnswers] = useState<Record<string, Answer>>(() => restore ?? {})
+  const [text, setText] = useState<Record<string, string>>(() => (restore ? restoredText(questions, restore) : {}))
+  const [result, setResult] = useState<ReturnType<typeof markAll> | null>(() => (restore ? markAll(questions, restore) : null))
   const [started] = useState(() => Date.now())
   const correct = useMemo(() => new Map(result?.results.map((r) => [r.id, r.correct])), [result])
   const answered = questions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== null && !(Array.isArray(answers[q.id]) && !(answers[q.id] as number[]).length)).length

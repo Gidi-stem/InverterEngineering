@@ -479,6 +479,7 @@ function LessonPage() {
           questions={k.check}
           mode="practice"
           testid="check"
+          restore={p.attempts.find((a) => a.kind === 'check' && a.ref === l.id)?.answers}
           onSubmit={(r) => {
             enrol(c.id)
             recordAttempt({ kind: 'check', ref: l.id, score: r.score, max: r.max, durationMs: r.durationMs, answers: r.answers })
@@ -494,7 +495,7 @@ function LessonPage() {
           ))}
         </ul>
         <H n={14}>{`Homework: ${k.homework.title}`}</H>
-        <Homework lesson={l} onSubmit={(score, max, answers, durationMs) => recordAttempt({ kind: 'assignment', ref: k.homework.id, score, max, durationMs, answers })} />
+        <Homework lesson={l} restore={p.attempts.find((a) => a.kind === 'assignment' && a.ref === k.homework.id)?.answers} onSubmit={(score, max, answers, durationMs) => recordAttempt({ kind: 'assignment', ref: k.homework.id, score, max, durationMs, answers })} />
         <nav className="mt-10 flex flex-wrap justify-between gap-2 border-t border-chassis-700 pt-4 text-sm">
           {prev ? (
             <Link to={`/academy/${c.id}/${prev.l.id}`} className="text-signal-300 hover:underline" data-testid="prev-lesson">
@@ -561,7 +562,7 @@ function WorkedExample({ n, e }: { n: number; e: { title: string; problem: strin
   )
 }
 
-function Homework({ lesson, onSubmit }: { lesson: AcademyLesson; onSubmit: (score: number, max: number, answers: Record<string, number | number[] | null>, ms: number) => void }) {
+function Homework({ lesson, restore, onSubmit }: { lesson: AcademyLesson; restore?: Record<string, number | number[] | null>; onSubmit: (score: number, max: number, answers: Record<string, number | number[] | null>, ms: number) => void }) {
   const hw = lesson.content!.homework
   const [open, setOpen] = useState<Record<number, boolean>>({})
   return (
@@ -569,7 +570,7 @@ function Homework({ lesson, onSubmit }: { lesson: AcademyLesson; onSubmit: (scor
       <p className="text-ink-300">
         <Inline text={hw.brief} />
       </p>
-      {hw.tasks.length > 0 && <QuestionSet key={hw.id} questions={hw.tasks} mode="practice" testid="hw" onSubmit={(r) => onSubmit(r.score, r.max, r.answers, r.durationMs)} />}
+      {hw.tasks.length > 0 && <QuestionSet key={hw.id} questions={hw.tasks} mode="practice" testid="hw" restore={restore} onSubmit={(r) => onSubmit(r.score, r.max, r.answers, r.durationMs)} />}
       {hw.written.map((w, i) => (
         <div key={i} className="rounded-md border border-chassis-700 p-3 text-sm">
           <p className="text-ink-100">
@@ -676,7 +677,7 @@ function AssignmentPage() {
         <Inline text={a.brief} />
       </p>
       <div className="mt-4">
-        <QuestionSet questions={a.tasks} mode="practice" testid="assignment" onSubmit={(r) => recordAttempt({ kind: 'assignment', ref: a.id, score: r.score, max: r.max, durationMs: r.durationMs, answers: r.answers })} />
+        <QuestionSet questions={a.tasks} mode="practice" testid="assignment" restore={p.attempts.find((at) => at.kind === 'assignment' && at.ref === a.id)?.answers} onSubmit={(r) => recordAttempt({ kind: 'assignment', ref: a.id, score: r.score, max: r.max, durationMs: r.durationMs, answers: r.answers })} />
       </div>
       {a.written.map((w, i) => (
         <div key={i} className="mt-4 rounded-md border border-chassis-700 p-3 text-sm">
