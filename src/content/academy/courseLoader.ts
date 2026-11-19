@@ -18,6 +18,8 @@ const COURSE_CONTENT: Record<string, Loader> = {
   S1: () => import('./s1').then((m) => m.S1),
   S2: () => import('./s2').then((m) => m.S2),
   F3: () => import('./f3').then((m) => m.F3),
+  F4: () => import('./f4').then((m) => m.F4),
+  P4: () => import('./p4').then((m) => m.P4),
   F5: () => import('./f5').then((m) => m.F5),
 }
 

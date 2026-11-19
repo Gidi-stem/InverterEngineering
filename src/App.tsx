@@ -16,6 +16,7 @@ const BuildPage = lazy(() => import('./features/build/BuildPage'))
 const AcademyRouter = lazy(() => import('./features/academy/AcademyPages'))
 const SolarPage = lazy(() => import('./features/solar/SolarPage'))
 const InstrumentsLabPage = lazy(() => import('./features/instruments/InstrumentsLabPage'))
+const RepairWorkshopPage = lazy(() => import('./features/repair/RepairWorkshopPage'))
 const pageLoading = <div className="grid h-64 place-items-center text-sm text-ink-400">Loading…</div>
 const cktLoading = <div className="grid h-64 place-items-center text-sm text-ink-400">Loading the circuit laboratory…</div>
 const libLoading = <div className="grid h-64 place-items-center text-sm text-ink-400">Loading the component library…</div>
@@ -45,7 +46,8 @@ export default function App() {
           <Route path="/academy/*" element={<Suspense fallback={pageLoading}><AcademyRouter /></Suspense>} />
           <Route path="/solar" element={<Suspense fallback={pageLoading}><SolarPage /></Suspense>} />
           <Route path="/instruments/*" element={<Suspense fallback={pageLoading}><InstrumentsLabPage /></Suspense>} />
-          {MODULES.filter((m) => !['dashboard', 'progress', 'lab3d', 'components', 'circuit-lab', 'build', 'academy', 'solar', 'instruments'].includes(m.id)).map((m) => (
+          <Route path="/repair" element={<Suspense fallback={pageLoading}><RepairWorkshopPage /></Suspense>} />
+          {MODULES.filter((m) => !['dashboard', 'progress', 'lab3d', 'components', 'circuit-lab', 'build', 'academy', 'solar', 'instruments', 'repair'].includes(m.id)).map((m) => (
             <Route key={m.id} path={m.path} element={<ModulePage moduleId={m.id} />} />
           ))}
           <Route path="*" element={<Navigate to="/" replace />} />

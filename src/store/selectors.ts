@@ -37,8 +37,25 @@ export function summarise(p: ProgressData): ProgressSummary {
     bestByAssessment.set(a.assessmentId, Math.max(bestByAssessment.get(a.assessmentId) ?? 0, pct))
   }
   const assessPcts = [...bestByAssessment.values()]
-  const correct = p.diagnoses.filter((d) => d.correct).length
-  const solvedScenarios = new Set(p.diagnoses.filter((d) => d.correct).map((d) => d.scenarioId)).size
+
+  // The Repair Workshop (Phase 9) records its results as `attempts` of kind 'troubleshoot' —
+  // the same Academy attempt model used for checks/quizzes/exams — not as legacy `diagnoses`
+  // entries (nothing writes those any more; they're kept only so progress saved by the earlier
+  // troubleshooting prototype, if any, still counts). Both sources are merged here so a solved
+  // scenario is credited regardless of which system produced it.
+  const troubleshootAttempts = p.attempts.filter((a) => a.kind === 'troubleshoot')
+  const bestTroubleshootByScenario = new Map<string, number>()
+  for (const a of troubleshootAttempts) {
+    const pct = a.max > 0 ? a.score / a.max : 0
+    bestTroubleshootByScenario.set(a.ref, Math.max(bestTroubleshootByScenario.get(a.ref) ?? 0, pct))
+  }
+  const solvedScenarios = new Set([
+    ...p.diagnoses.filter((d) => d.correct).map((d) => d.scenarioId),
+    ...[...bestTroubleshootByScenario].filter(([, pct]) => pct >= 1).map(([id]) => id),
+  ]).size
+  const troubleshootAttemptCount = p.diagnoses.length + troubleshootAttempts.length
+  const correct =
+    p.diagnoses.filter((d) => d.correct).length + troubleshootAttempts.filter((a) => a.max > 0 && a.score === a.max).length
   const frac = (a: number, b: number) => (b > 0 ? Math.min(a / b, 1) : 0)
 
   const overall =
@@ -62,9 +79,9 @@ export function summarise(p: ProgressData): ProgressSummary {
       averagePct: assessPcts.length ? (100 * assessPcts.reduce((s, x) => s + x, 0)) / assessPcts.length : null,
     },
     troubleshooting: {
-      attempts: p.diagnoses.length,
+      attempts: troubleshootAttemptCount,
       correct,
-      ratePct: p.diagnoses.length ? (100 * correct) / p.diagnoses.length : null,
+      ratePct: troubleshootAttemptCount ? (100 * correct) / troubleshootAttemptCount : null,
     },
     simulations: p.simulationRuns.length,
     badges: { earned: BADGES.filter((b) => b.earned(p)).length, total: BADGES.length },

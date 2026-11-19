@@ -30,6 +30,8 @@ export function routeOf(l: ToolLink): string {
       // Lessons aren't individually routable: the module page lists the whole sequence (and the
       // lesson's own linked experiments), so the whole module is the correct, honest target.
       return '/fundamentals'
+    case 'repair':
+      return `/repair?scenario=${l.id}`
   }
 }
 

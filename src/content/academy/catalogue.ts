@@ -2,7 +2,9 @@ import type { AcademyModule, Competency, Course, Level, Stage } from './types'
 import { F1 } from './f1'
 import { F2 } from './f2'
 import { F3 } from './f3'
+import { F4 } from './f4'
 import { F5 } from './f5'
+import { P4 } from './p4'
 import { S1 } from './s1'
 import { S2 } from './s2'
 
@@ -30,13 +32,7 @@ export const COURSES: Course[] = [
   F1,
   F2,
   F3,
-  scheduled('F4', 'Electronic Components for Inverter Engineering', 'beginner', 'foundation', 9, ['F2'], 'CU-04', 'Passive, semiconductor, magnetic, protection, control, sensing and thermal components: how they work, their ratings, how to test them and how to identify faults and replacements.', [
-    ['Passive components', ['Resistors', 'Capacitors: electrolytic, film and ceramic', 'Inductors', 'Testing passive components']],
-    ['Semiconductor devices', ['Introduction to semiconductors', 'Diodes', 'Rectification with diodes', 'MOSFETs', 'IGBTs', 'Gate drivers', 'Switching characteristics', 'Component testing', 'Fault identification', 'Component replacement']],
-    ['Magnetic components', ['Magnetic circuits and saturation', 'Transformers in inverters', 'Output and filter inductors', 'Testing windings']],
-    ['Protection and switching devices', ['Fuses', 'Circuit breakers', 'Relays and contactors', 'Relays versus semiconductor switches']],
-    ['Control, sensing and thermal', ['PWM controllers and microcontrollers', 'Voltage and current sensing', 'Heat sinks, fans and thermal resistance', 'PCBs, connectors and terminals']],
-  ]),
+  F4,
   F5,
   scheduled('P1', 'Circuit Analysis and Construction', 'intermediate', 'practitioner', 10, ['F2'], 'CU-06', 'Reading schematics, nodal analysis, Thevenin and Norton equivalents, non-linear devices, building and fault-finding circuits, and switching circuits up to the H-bridge.', [
     ['Reading schematics', ['Symbols and pin identification', 'Nodes and the connection graph', 'Reference (ground) and measurement']],
@@ -55,11 +51,7 @@ export const COURSES: Course[] = [
     ['Sine-wave inverters', ['SPWM generation', 'Output filtering', 'Feedback and regulation']],
     ['Ratings and performance', ['Waveform families and RMS', 'Harmonics, THD and filtering', 'Efficiency, losses and heat', 'Watts, VA and battery current']],
   ]),
-  scheduled('P4', 'Inside a Real Inverter', 'intermediate', 'practitioner', 9, ['F1'], 'CU-09', 'A guided tour of two real inverter architectures in the 3D laboratory, safe disassembly and reassembly, and component identification on the boards.', [
-    ['Architecture tour', ['Enclosure, terminals and earthing', 'The power stage', 'Magnetics', 'Control electronics', 'Protection and sensing']],
-    ['Safe disassembly and reassembly', ['Isolation and discharge in practice', 'Disassembly sequence and why', 'Reassembly and functional test']],
-    ['Identification', ['Recognising components on a board', 'Comparing a square-wave and a hybrid inverter']],
-  ]),
+  P4,
   scheduled('P5', 'Battery Engineering and Energy Storage', 'intermediate', 'practitioner', 11, ['F1', 'F2'], 'CU-10', 'Battery technologies, capacity and state of charge, DC system design, cable sizing, fusing, charging profiles, battery management and energy storage, taught in the Phase 11 battery laboratory.', [
     ['Battery technology', ['Lead-acid, LiFePO₄ and lithium-ion', 'Capacity, C-rate and Peukert', 'State of charge and depth of discharge']],
     ['DC system design', ['Cable sizing and voltage drop', 'Fusing and isolation', 'Series and parallel banks, balancing']],

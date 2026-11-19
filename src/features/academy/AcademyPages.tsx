@@ -468,7 +468,7 @@ function LessonPage() {
             <li key={a.label}>
               <Link to={routeOf(a)} className="flex min-h-11 items-center justify-between gap-2 rounded-md border border-chassis-600 px-3 text-sm hover:border-chassis-500">
                 <span className="text-ink-200">{a.label}</span>
-                <span className="text-[11px] text-ink-500">{{ lab3d: '3D lab', library: 'Library', procedure: 'Test procedure', compare: 'Comparison', circuit: 'Circuit lab', sim: 'Simulator', build: 'Build lab', solar: 'Solar lab', instrument: 'Instruments lab', fundamentals: 'Fundamentals module' }[a.kind]}</span>
+                <span className="text-[11px] text-ink-500">{{ lab3d: '3D lab', library: 'Library', procedure: 'Test procedure', compare: 'Comparison', circuit: 'Circuit lab', sim: 'Simulator', build: 'Build lab', solar: 'Solar lab', instrument: 'Instruments lab', fundamentals: 'Fundamentals module', repair: 'Repair workshop' }[a.kind]}</span>
               </Link>
             </li>
           ))}

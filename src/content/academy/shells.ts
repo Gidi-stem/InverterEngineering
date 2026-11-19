@@ -24,6 +24,7 @@ export const SHELL_COURSES: Course[] = [
     "stage": "foundation",
     "summary": "The mandatory first course: how electricity harms people, where energy is stored, safe isolation and proving dead, protection, earthing and safe workshop practice. Passing F1 (80 %) opens the practical laboratories.",
     "prerequisites": [],
+    "recommended": [],
     "status": "published",
     "phase": 7,
     "competency": "CU-01",
@@ -510,6 +511,7 @@ export const SHELL_COURSES: Course[] = [
     "prerequisites": [
       "F1"
     ],
+    "recommended": [],
     "status": "published",
     "phase": 7,
     "competency": "CU-02",
@@ -1194,181 +1196,509 @@ export const SHELL_COURSES: Course[] = [
     "recommended": [
       "F3"
     ],
-    "status": "scheduled",
+    "status": "published",
     "phase": 9,
     "competency": "CU-04",
     "modules": [
       {
         "id": "F4.M1",
         "title": "Passive components",
-        "summary": "",
+        "summary": "Resistors, capacitors and inductors: how each stores or dissipates energy, how to read their markings and ratings, and how to test each one out of circuit.",
         "lessons": [
           {
             "id": "F4.M1.L1",
-            "title": "Resistors",
-            "minutes": 30
+            "title": "Resistors: types, codes, power, tolerance",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M1.L2",
-            "title": "Capacitors: electrolytic, film and ceramic",
-            "minutes": 30
+            "title": "Capacitors: electrolytic, film and ceramic; ESR; polarity",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M1.L3",
-            "title": "Inductors",
-            "minutes": 30
+            "title": "Inductors: cores, saturation, current rating",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M1.L4",
             "title": "Testing passive components",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "F4.M1.P1",
+            "title": "Passive component rating calculations",
+            "description": "Check resistor power ratings, capacitor ESR heating and inductor saturation margin against real operating figures. All answers must be correct.",
+            "task": {
+              "id": "f4-passive-ratings",
+              "kind": "calc",
+              "title": "Rating a resistor, a capacitor and an inductor",
+              "brief": "A 15 Ω bleeder resistor carries 3 A. A bus capacitor with ESR 0.25 Ω carries 2 A RMS ripple. An output choke of 1 mH is rated for a saturation current of 9 A.",
+              "questions": [
+                {
+                  "id": "c1",
+                  "type": "numeric",
+                  "prompt": "Power dissipated in the bleeder resistor (W)?",
+                  "answer": 135,
+                  "tol": 0.02,
+                  "unit": "W",
+                  "explain": "P = I²R = 9×15 = 135 W."
+                },
+                {
+                  "id": "c2",
+                  "type": "numeric",
+                  "prompt": "Self-heating in the bus capacitor from its ESR (W)?",
+                  "answer": 1,
+                  "tol": 0.02,
+                  "unit": "W",
+                  "explain": "P = I²·ESR = 4×0.25 = 1 W."
+                },
+                {
+                  "id": "c3",
+                  "type": "numeric",
+                  "prompt": "Energy stored in the output choke at a load current of 6 A (J)?",
+                  "answer": 0.018,
+                  "tol": 0.03,
+                  "unit": "J",
+                  "explain": "½×0.001×36 = 0.018 J."
+                },
+                {
+                  "id": "c4",
+                  "type": "mcq",
+                  "prompt": "If the load current rises to 10 A, what happens to the output choke?",
+                  "options": [
+                    "It exceeds its saturation rating and its effective inductance collapses",
+                    "Nothing, it has unlimited headroom",
+                    "Its resistance drops to zero",
+                    "Its inductance increases to compensate"
+                  ],
+                  "answer": 0,
+                  "explain": "10 A exceeds the 9 A saturation rating."
+                }
+              ],
+              "explain": "Each rating (power, ESR heating, saturation current) is an independent check against the actual operating current — matching one specification (value) while ignoring another (rating) is the recurring mistake this module warns against."
+            },
+            "evidence": {
+              "kind": "task",
+              "id": "f4-passive-ratings"
+            }
+          },
+          {
+            "id": "F4.M1.P2",
+            "title": "Diagnose a dried-out smoothing capacitor",
+            "description": "Confirm, in the Repair Workshop, that you can apply the ESR-aging reasoning from this module to a real circuit-grounded fault.",
+            "link": {
+              "kind": "repair",
+              "label": "Dried-out smoothing capacitor",
+              "id": "rsc-04"
+            },
+            "evidence": {
+              "kind": "troubleshoot",
+              "project": "rsc-04"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        },
+        "assignment": {
+          "id": "F4.M1.assignment",
+          "title": "Passive component selection and testing",
+          "brief": "",
+          "tasks": [],
+          "written": []
+        }
       },
       {
         "id": "F4.M2",
         "title": "Semiconductor devices",
-        "summary": "",
+        "summary": "Diodes, MOSFETs, IGBTs and the gate drivers that control them: how each works, how they switch and lose energy, how to test them, and how to recognise and safely replace a failed device.",
         "lessons": [
           {
             "id": "F4.M2.L1",
             "title": "Introduction to semiconductors",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L2",
-            "title": "Diodes",
-            "minutes": 30
+            "title": "Diodes: forward and reverse behaviour, ratings",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L3",
             "title": "Rectification with diodes",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L4",
-            "title": "MOSFETs",
-            "minutes": 30
+            "title": "MOSFETs: structure, V_th, R_DS(on), body diode",
+            "minutes": 35,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L5",
-            "title": "IGBTs",
-            "minutes": 30
+            "title": "IGBTs: V_CE(sat), tail current",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L6",
-            "title": "Gate drivers",
-            "minutes": 30
+            "title": "Gate drivers: bootstrap, isolation, dead time",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L7",
-            "title": "Switching characteristics",
-            "minutes": 30
+            "title": "Switching characteristics and losses",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L8",
-            "title": "Component testing",
-            "minutes": 30
+            "title": "Component testing: diode, MOSFET and IGBT checks",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L9",
-            "title": "Fault identification",
-            "minutes": 30
+            "title": "Fault identification: short, open, leakage",
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M2.L10",
-            "title": "Component replacement",
-            "minutes": 30
+            "title": "Component replacement and compatibility",
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "F4.M2.P1",
+            "title": "Semiconductor fault classification and loss calculations",
+            "description": "Classify faults from readings and compute device losses. All answers must be correct.",
+            "task": {
+              "id": "f4-semiconductor-faults",
+              "kind": "calc",
+              "title": "Classifying faults and computing losses",
+              "brief": "A diode reads 0.60 V forward / OL reverse (healthy reference). A suspect MOSFET reads 0.00 V in both diode-test directions across drain-source. A second MOSFET has R_DS(on)=18 mΩ and carries 24 A RMS, plus switching energy (E_on+E_off)=35 µJ at 15 kHz.",
+              "questions": [
+                {
+                  "id": "c1",
+                  "type": "mcq",
+                  "prompt": "How is the suspect MOSFET's fault classified?",
+                  "options": [
+                    "Short",
+                    "Open",
+                    "Elevated leakage",
+                    "Healthy"
+                  ],
+                  "answer": 0,
+                  "explain": "0.00 V both ways where a diode drop is expected is a short."
+                },
+                {
+                  "id": "c2",
+                  "type": "numeric",
+                  "prompt": "Conduction loss (W) of the second MOSFET?",
+                  "answer": 10.368,
+                  "tol": 0.02,
+                  "unit": "W",
+                  "explain": "24²×0.018=576×0.018=10.368 W."
+                },
+                {
+                  "id": "c3",
+                  "type": "numeric",
+                  "prompt": "Switching loss (W) of the second MOSFET?",
+                  "answer": 0.525,
+                  "tol": 0.02,
+                  "unit": "W",
+                  "explain": "35e-6×15000=0.525 W."
+                },
+                {
+                  "id": "c4",
+                  "type": "numeric",
+                  "prompt": "Total device loss (W)?",
+                  "answer": 10.893,
+                  "tol": 0.02,
+                  "unit": "W",
+                  "explain": "10.368+0.525=10.893 W."
+                }
+              ],
+              "explain": "A full semiconductor fault assessment classifies the fault pattern correctly AND computes real operating losses — neither alone is a complete answer."
+            },
+            "evidence": {
+              "kind": "task",
+              "id": "f4-semiconductor-faults"
+            }
+          },
+          {
+            "id": "F4.M2.P2",
+            "title": "Diagnose a MOSFET fault in the Repair Workshop",
+            "description": "Confirm, on a real circuit-grounded fault, that you can apply the body-diode and gate-charge reasoning from this module.",
+            "link": {
+              "kind": "repair",
+              "label": "MOSFET failed short",
+              "id": "rsc-09"
+            },
+            "evidence": {
+              "kind": "troubleshoot",
+              "project": "rsc-09"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        },
+        "assignment": {
+          "id": "F4.M2.assignment",
+          "title": "Semiconductor device selection and fault reasoning",
+          "brief": "",
+          "tasks": [],
+          "written": []
+        }
       },
       {
         "id": "F4.M3",
         "title": "Magnetic components",
-        "summary": "",
+        "summary": "Magnetic circuits and saturation, transformers at low and high frequency, output and filter inductors, and testing windings.",
         "lessons": [
           {
             "id": "F4.M3.L1",
-            "title": "Magnetic circuits and saturation",
-            "minutes": 30
+            "title": "Magnetic circuits: flux, B-H, saturation",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M3.L2",
-            "title": "Transformers in inverters",
-            "minutes": 30
+            "title": "Transformers in inverters: LF vs HF",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M3.L3",
             "title": "Output and filter inductors",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M3.L4",
             "title": "Testing windings",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "F4.M3.P1",
+            "title": "Diagnose an output inductor fault in the Repair Workshop",
+            "description": "Confirm, on a real circuit-grounded fault, that you can apply the winding-test reasoning from this module.",
+            "link": {
+              "kind": "repair",
+              "label": "Output inductor winding open",
+              "id": "rsc-11"
+            },
+            "evidence": {
+              "kind": "troubleshoot",
+              "project": "rsc-11"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        },
+        "assignment": {
+          "id": "F4.M3.assignment",
+          "title": "Magnetic component reasoning and testing",
+          "brief": "",
+          "tasks": [],
+          "written": []
+        }
       },
       {
         "id": "F4.M4",
         "title": "Protection and switching devices",
-        "summary": "",
+        "summary": "Fuses and circuit breakers, relays and contactors, and how electromechanical switching compares with the semiconductor switching of F4.M2.",
         "lessons": [
           {
             "id": "F4.M4.L1",
-            "title": "Fuses",
-            "minutes": 30
+            "title": "Fuses: I²t, breaking capacity",
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M4.L2",
-            "title": "Circuit breakers",
-            "minutes": 30
+            "title": "Circuit breakers: thermal, magnetic",
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M4.L3",
             "title": "Relays and contactors",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M4.L4",
             "title": "Relays versus semiconductor switches",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "F4.M4.P1",
+            "title": "Diagnose a blown fuse in the Repair Workshop",
+            "description": "Confirm, on a real circuit-grounded fault, that you can apply the continuity-test and root-cause reasoning from this module.",
+            "link": {
+              "kind": "repair",
+              "label": "Blown fuse",
+              "id": "rsc-02"
+            },
+            "evidence": {
+              "kind": "troubleshoot",
+              "project": "rsc-02"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        },
+        "assignment": {
+          "id": "F4.M4.assignment",
+          "title": "Protection and switching device reasoning",
+          "brief": "",
+          "tasks": [],
+          "written": []
+        }
       },
       {
         "id": "F4.M5",
         "title": "Control, sensing and thermal",
-        "summary": "",
+        "summary": "PWM controllers and microcontrollers, voltage and current sensing, heat sinks and thermal resistance, and the PCBs, connectors and terminals that carry it all.",
         "lessons": [
           {
             "id": "F4.M5.L1",
             "title": "PWM controllers and microcontrollers",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M5.L2",
             "title": "Voltage and current sensing",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "F4.M5.L3",
-            "title": "Heat sinks, fans and thermal resistance",
-            "minutes": 30
+            "title": "Thermal management: heat sinks and fans",
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "F4.M5.L4",
             "title": "PCBs, connectors and terminals",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "F4.M5.P1",
+            "title": "Thermal and sensing calculation set",
+            "description": "Apply shunt current sensing and junction-temperature calculations together. All answers must be correct.",
+            "task": {
+              "id": "f4-thermal-sensing",
+              "kind": "calc",
+              "title": "Sensing and thermal calculations",
+              "brief": "A MOSFET dissipates 9 W total loss with a junction-to-ambient thermal resistance of 3.5 °C/W at a 30 °C ambient. Its current is measured by an 8 mΩ shunt showing a 0.24 V drop.",
+              "questions": [
+                {
+                  "id": "c1",
+                  "type": "numeric",
+                  "prompt": "Junction temperature (°C)?",
+                  "answer": 61.5,
+                  "tol": 0.02,
+                  "unit": "°C",
+                  "explain": "30+9×3.5=61.5 °C."
+                },
+                {
+                  "id": "c2",
+                  "type": "numeric",
+                  "prompt": "Measured current (A) from the shunt?",
+                  "answer": 30,
+                  "tol": 0.02,
+                  "unit": "A",
+                  "explain": "0.24/0.008=30 A."
+                },
+                {
+                  "id": "c3",
+                  "type": "mcq",
+                  "prompt": "If the shunt's true resistance has drifted up by 20% without recalibration, the controller will believe current is...",
+                  "options": [
+                    "lower than it actually is",
+                    "higher than it actually is",
+                    "unaffected",
+                    "exactly zero"
+                  ],
+                  "answer": 0,
+                  "explain": "I=V/R: a higher R for the same V reads as a lower computed current, so the controller under-reads the true current."
+                }
+              ],
+              "explain": "Thermal margin and sensing accuracy are independent checks that both feed into whether a system runs safely and is correctly controlled — this task exercises both calculations together."
+            },
+            "evidence": {
+              "kind": "task",
+              "id": "f4-thermal-sensing"
+            }
+          },
+          {
+            "id": "F4.M5.P2",
+            "title": "Diagnose a gate-driver / control-path fault in the Repair Workshop",
+            "description": "Confirm, on a real circuit-grounded fault, that you can apply the cross-subsystem fault-tracing reasoning from this module.",
+            "link": {
+              "kind": "repair",
+              "label": "Gate-driver signal lost",
+              "id": "rsc-10"
+            },
+            "evidence": {
+              "kind": "troubleshoot",
+              "project": "rsc-10"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        },
+        "assignment": {
+          "id": "F4.M5.assignment",
+          "title": "Control, sensing and thermal integration",
+          "brief": "",
+          "tasks": [],
+          "written": []
+        }
       }
-    ]
+    ],
+    "exam": {
+      "pass": 0.8,
+      "minutes": 60,
+      "attempts": 3,
+      "cooldownHours": 24,
+      "questions": []
+    }
   },
   {
     "id": "F5",
@@ -1848,85 +2178,158 @@ export const SHELL_COURSES: Course[] = [
     "recommended": [
       "F4"
     ],
-    "status": "scheduled",
+    "status": "published",
     "phase": 9,
     "competency": "CU-09",
     "modules": [
       {
         "id": "P4.M1",
         "title": "Architecture tour",
-        "summary": "",
+        "summary": "A guided tour of a real inverter's five functional areas in the 3D Dissection Laboratory: enclosure and terminals, power stage, magnetics, control electronics, and protection and sensing.",
         "lessons": [
           {
             "id": "P4.M1.L1",
             "title": "Enclosure, terminals and earthing",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "P4.M1.L2",
             "title": "The power stage",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "P4.M1.L3",
             "title": "Magnetics",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "P4.M1.L4",
             "title": "Control electronics",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           },
           {
             "id": "P4.M1.L5",
             "title": "Protection and sensing",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        }
       },
       {
         "id": "P4.M2",
         "title": "Safe disassembly and reassembly",
-        "summary": "",
+        "summary": "The complete, guided isolation, discharge, disassembly and reassembly sequence for a real inverter, performed in the 3D laboratory and verified with a functional test.",
         "lessons": [
           {
             "id": "P4.M2.L1",
             "title": "Isolation and discharge in practice",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "P4.M2.L2",
             "title": "Disassembly sequence and why",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           },
           {
             "id": "P4.M2.L3",
             "title": "Reassembly and functional test",
-            "minutes": 30
+            "minutes": 30,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "P4.M2.P1",
+            "title": "Isolation, discharge and disassembly",
+            "description": "Isolate every source, confirm bus-capacitor discharge, and complete the guided disassembly sequence on the LF-3K model.",
+            "link": {
+              "kind": "lab3d",
+              "label": "Disassembly sequence",
+              "model": "lf3k"
+            },
+            "evidence": {
+              "kind": "activity",
+              "id": "lab3d:disassembly"
+            }
+          },
+          {
+            "id": "P4.M2.P2",
+            "title": "Reassembly and functional test",
+            "description": "Reverse the sequence correctly and pass the staged functional test.",
+            "link": {
+              "kind": "lab3d",
+              "label": "Reassembly and functional test",
+              "model": "lf3k"
+            },
+            "evidence": {
+              "kind": "activity",
+              "id": "lab3d:reassembly"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        }
       },
       {
         "id": "P4.M3",
         "title": "Identification",
-        "summary": "",
+        "summary": "Timed, scored component identification on a real board, and a direct comparison of a square-wave inverter against a hybrid inverter's architecture.",
         "lessons": [
           {
             "id": "P4.M3.L1",
             "title": "Recognising components on a board",
-            "minutes": 30
+            "minutes": 20,
+            "hasContent": true
           },
           {
             "id": "P4.M3.L2",
             "title": "Comparing a square-wave and a hybrid inverter",
-            "minutes": 30
+            "minutes": 25,
+            "hasContent": true
           }
         ],
-        "practicals": []
+        "practicals": [
+          {
+            "id": "P4.M3.P1",
+            "title": "Component identification challenge",
+            "description": "Identify at least 20 real inverter components by sight, under time pressure.",
+            "link": {
+              "kind": "lab3d",
+              "label": "Identification challenge",
+              "model": "lf3k"
+            },
+            "evidence": {
+              "kind": "activity",
+              "id": "lab3d:identify"
+            }
+          }
+        ],
+        "quiz": {
+          "pass": 0.8,
+          "questions": []
+        }
       }
-    ]
+    ],
+    "exam": {
+      "pass": 0.8,
+      "minutes": 40,
+      "attempts": 3,
+      "cooldownHours": 24,
+      "questions": []
+    }
   },
   {
     "id": "P5",

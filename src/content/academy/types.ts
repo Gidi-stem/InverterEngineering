@@ -20,6 +20,7 @@ export type ToolLink =
   | { kind: 'solar'; label: string; tab: SolarTab }
   | { kind: 'instrument'; label: string; id: string; scenario?: string }
   | { kind: 'fundamentals'; label: string; lessonId: string }
+  | { kind: 'repair'; label: string; id: string }
 
 export const SOLAR_TABS = ['design', 'iv', 'energy', 'faults', 'commission'] as const
 export type SolarTab = (typeof SOLAR_TABS)[number]
@@ -170,6 +171,9 @@ export type Evidence =
   | { kind: 'exercise'; id: string }
   | { kind: 'activity'; id: string }
   | { kind: 'lesson'; id: string }
+  /** A passed 'troubleshoot'-kind Attempt, keyed by ref. `project` names that ref: either a build
+   * project's embedded fault-finding mini-game (bld-* id) or a Repair Workshop scenario (rsc-* id)
+   * — both record the same Attempt shape, so either is valid evidence here. */
   | { kind: 'troubleshoot'; project: string }
   | { kind: 'task'; id: string }
 

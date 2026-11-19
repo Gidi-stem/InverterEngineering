@@ -51,7 +51,14 @@ export const BADGES: Badge[] = [
     availableFromPhase: 9,
     title: 'Fault Finder',
     description: 'Correctly diagnose three fault scenarios.',
-    earned: (p) => p.diagnoses.filter((d) => d.correct).length >= 3,
+    // The Repair Workshop records a passed scenario as an 'troubleshoot' Attempt (ref = scenario
+    // id, score === max), not as a legacy `diagnoses` entry — nothing writes those any more. Both
+    // are checked so progress saved by the earlier troubleshooting prototype, if any, still counts.
+    earned: (p) => {
+      const solved = new Set(p.diagnoses.filter((d) => d.correct).map((d) => d.scenarioId))
+      for (const a of p.attempts) if (a.kind === 'troubleshoot' && a.max > 0 && a.score === a.max) solved.add(a.ref)
+      return solved.size >= 3
+    },
   },
   {
     id: 'designer',

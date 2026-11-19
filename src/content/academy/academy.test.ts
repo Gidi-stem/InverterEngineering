@@ -9,6 +9,7 @@ import { COMPARISON_BY_ID } from '../components/comparisons'
 import { TEST_PROCEDURES } from '../components/testing'
 import { INSTRUMENTS } from '../instruments'
 import { INSTRUMENT_SCENARIO_IDS } from '../../engine/instruments'
+import { REPAIR_SCENARIO_BY_ID } from '../../engine/repair/scenarios'
 import type { InstrumentId } from '../../types/domain'
 import { MODEL_BY_ID } from '../models'
 import { MODULE_BY_ID, MODULES } from '../modules'
@@ -50,6 +51,8 @@ function linkExists(l: ToolLink): boolean {
       return !!INSTRUMENTS[l.id as InstrumentId] && (!l.scenario || (INSTRUMENT_SCENARIO_IDS[l.id] ?? []).includes(l.scenario))
     case 'fundamentals':
       return MODULE_BY_ID.fundamentals.lessons.some((x) => x.id === l.lessonId)
+    case 'repair':
+      return !!REPAIR_SCENARIO_BY_ID[l.id]
   }
 }
 
@@ -166,7 +169,12 @@ describe('questions, links, diagrams and glossary', () => {
       for (const m of c.modules)
         for (const p of m.practicals) {
           const e = p.evidence
-          if (e.kind === 'project' || e.kind === 'troubleshoot') expect(BUILD_PROJECT_BY_ID[e.kind === 'project' ? e.id : e.project], p.id).toBeTruthy()
+          if (e.kind === 'project') expect(BUILD_PROJECT_BY_ID[e.id], p.id).toBeTruthy()
+          // 'troubleshoot' evidence checks a 'troubleshoot'-kind Attempt by ref (attemptsOf(p, 'troubleshoot', e.project))
+          // regardless of which feature recorded it — the build-project-embedded fault-finding mini-games (Phase 6, bld-*
+          // ids) and the Phase 9 Repair Workshop (rsc-* scenario ids) both write that same Attempt shape, so either is a
+          // real target here.
+          if (e.kind === 'troubleshoot') expect(BUILD_PROJECT_BY_ID[e.project] || REPAIR_SCENARIO_BY_ID[e.project], p.id).toBeTruthy()
           if (e.kind === 'activity' && e.id.startsWith('sim:')) expect(SIM_EXPERIMENT_BY_ID[e.id.slice(4)], p.id).toBeTruthy()
         }
   })
@@ -316,7 +324,7 @@ describe('progression, completion and competency', () => {
     p = at(p, { kind: 'exam', ref: 'S1', score: 18, max: 20 })
     expect(level(p)).toBe('virtual-competency')
     // Scheduled courses' competencies are reported as not yet available; published ones are.
-    expect(competencyRecord(p).find((c) => c.id === 'CU-04')!.available).toBe(false)
+    expect(competencyRecord(p).find((c) => c.id === 'CU-13')!.available).toBe(false)
     expect(competencyRecord(p).find((c) => c.id === 'CU-01')!.available).toBe(true)
     expect(competencyRecord(p).find((c) => c.id === 'CU-03')!.available).toBe(true)
     expect(competencyRecord(p).find((c) => c.id === 'CU-15')).toBeDefined()

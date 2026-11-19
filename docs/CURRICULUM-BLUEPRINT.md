@@ -30,12 +30,12 @@ It also identifies the educational gaps in Phases 1–5 and schedules the work t
 | F1 | Electrical Safety and Fundamentals | Beginner | none (**mandatory first course**) | — | Academy practical assessments (isolation drill, prove-dead drill, hazard identification, protection sizing), 3D lab (view), library (fuse, breaker, PE) | **Phase 7 (done)** |
 | F2 | DC Electrical Systems and Fundamentals | Beginner | F1 | — | Circuit lab (ckt-01…03), simulator (sim-01, sim-02), academy calculation tasks | **Phase 7 (done)** |
 | F3 | AC Electrical Fundamentals | Beginner | F2 | — | Simulator (AC source, AC analysis, sim-03/04/08), waveform bench, transformer models (ckt-07), Phase 8 instruments | **Phase 8 (done)** |
-| F4 | Electronic Components for Inverter Engineering | Beginner → Intermediate | F2 | F3 | Component library (24 entries, test procedures, comparisons), 3D lab, circuit lab, Phase 9 workshop | Phase 9 |
+| F4 | Electronic Components for Inverter Engineering | Beginner → Intermediate | F2 | F3 | Component library (24 entries, test procedures, comparisons), 3D lab, circuit lab, Phase 9 workshop | **Phase 9 (done)** |
 | F5 | Measurement and Virtual Instruments | Beginner → Intermediate | F1, F2 | F3 | Phase 8 virtual instruments, library test procedures, simulator oscilloscope | **Phase 8 (done)** |
 | P1 | Circuit Analysis and Construction | Intermediate | F2 | F4 | Circuit lab (editor, checks, exercises ckt-01…10) | Phase 10 |
 | P2 | Power Electronics Fundamentals | Intermediate | F3, P1 | F4 | Simulator (sim-03…08), circuit lab, thermal and loss tools | Phase 10 |
 | P3 | Inverter Principles | Intermediate | P2 | — | Simulator (sim-08…10), waveform bench, Fundamentals lessons fun-01…07 | Phase 10 |
-| P4 | Inside a Real Inverter | Intermediate | F1 | F4 | 3D lab (LF-3K, SQ-1K), guided disassembly/reassembly, asm-01, Phase 9 workshop | Phase 9 |
+| P4 | Inside a Real Inverter | Intermediate | F1 | F4 | 3D lab (LF-3K, SQ-1K), guided disassembly/reassembly, asm-01, Phase 9 workshop | **Phase 9 (done)** |
 | P5 | Battery Engineering and Energy Storage | Intermediate | F1, F2 | S2 | Phase 11 battery laboratory, solar lab battery sizing, library battery terminals | Phase 11 |
 | S1 | Inverter Design and Construction | Advanced | F1, F2 | P2, P3, P4 | Build lab (bld-a…h), configurator, compatibility, test suite, simulator | **Phase 6 (done)** |
 | S2 | Solar PV and Hybrid Engineering | Advanced | F1, F2 | S1, P5 | Phase 7 Solar and Hybrid Engineering Laboratory (load profile → complete system design, PV I–V lab, 24 h energy management, troubleshooting, commissioning), bld-g, bld-h | Phase 7 |
@@ -96,6 +96,8 @@ F1 passes at 80 % (quizzes and examination), reflecting its safety role.
 | F4.M4 Protection and switching devices | L1 Fuses (I²t, breaking capacity) · L2 Circuit breakers (thermal, magnetic) · L3 Relays and contactors · L4 Relays vs semiconductor switches | Library fuse/breaker/relay, comparisons fuse-vs-breaker, relay-vs-semiconductor |
 | F4.M5 Control, sensing and thermal | L1 PWM controllers vs microcontrollers · L2 Voltage and current sensing · L3 Heat sinks, fans, thermal resistance · L4 PCBs, connectors and terminals | Library control/sensing/thermal entries, comparisons, 3D boards |
 
+**Authored (Phase 9):** all 26 lessons across the 5 modules are fully authored (objectives, introduction, lecture, technical notes, diagrams, formulas, worked examples, applications, common mistakes, demo, activities, knowledge checks, summary, homework), each with real, verified cross-references into the Component Library, 3D Dissection Laboratory, Circuit Lab, Simulator and Repair Workshop. Numerical/calculation-based checkpoints are included throughout, not only multiple-choice. F4.M4 and F4.M5 were authored strictly against this blueprint's exact lesson breakdown (fuses/breakers/relays/relays-vs-semiconductor for M4; PWM/MCU, sensing, thermal, PCBs-connectors-terminals for M5) rather than the earlier syllabus-stub wording. See PHASE-9-REPORT.md.
+
 ### F5 Measurement and Virtual Instruments (Beginner → Intermediate)
 | Module | Lessons | Tools |
 |---|---|---|
@@ -133,6 +135,8 @@ F1 passes at 80 % (quizzes and examination), reflecting its safety role.
 | P4.M1 Architecture tour | L1 Enclosure, terminals and earthing (l3d-01) · L2 Power stage (l3d-02) · L3 Magnetics (l3d-03) · L4 Control electronics (l3d-04) · L5 Protection and sensing (l3d-05) | 3D lab panels, library links |
 | P4.M2 Safe disassembly and reassembly | L1 Isolation and discharge in practice ★ · L2 Disassembly sequence and why ★ · L3 Reassembly and functional test ★ (l3d-06) | 3D guided procedure ★ |
 | P4.M3 Identification | L1 Recognising components on a board ★ (asm-01) · L2 Comparing a square-wave and a hybrid inverter (SQ-1K vs LF-3K) | 3D identification ★, model comparison |
+
+**Authored (Phase 9):** all 10 lessons across the 3 modules are fully authored. Practical evidence is tied to the 3D laboratory's real recorded activity ids (`lab3d:disassembly`, `lab3d:reassembly`, `lab3d:identify`) rather than the legacy, non-Academy `l3d-*`/`asm-*` module lessons, since no generic `ToolLink` kind exists for linking those directly; `lab3d` tool links instead reference real model/part ids on the LF-3K and SQ-1K models. See PHASE-9-REPORT.md.
 
 ### P5 Battery Engineering and Energy Storage (Intermediate): Phase 11
 | Module | Lessons | Tools |
@@ -298,7 +302,7 @@ The ten original development phases are retained and four are added. **Every cou
 | 6 | Build Your Own Inverter; Academy framework | **S1** | Done |
 | 7 | Solar and Hybrid Engineering Laboratory; prerequisite enforcement; practical assessments | **F1, F2** (first, mandatory), **S2** | Done |
 | 8 | Virtual instruments bound to the simulation | **F3, F5** | Done |
-| 9 | Repair workshop (17 scenarios) | **F4, P4** | |
+| 9 | Repair workshop (17 scenarios) | **F4, P4** | Done |
 | 10 | Assessments and engineering projects | **P1, P2, P3** | |
 | 11 | Battery Engineering and Energy Storage (battery laboratory) | **P5** | |
 | 12 | Installation and Commissioning (installation laboratory) | **S3** | |
