@@ -1,0 +1,1 @@
+import{a as e,n as t}from"./jsx-runtime-Wy9s6hX0.js";import{n}from"./sizing-BtISC6KJ.js";import{t as r}from"./solarStore-CRB2eY-v.js";var i=e(t(),1);function a(){let e=r(e=>e.spec);return(0,i.useMemo)(()=>n(e),[e])}export{a as t};
